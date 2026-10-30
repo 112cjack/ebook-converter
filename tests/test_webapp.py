@@ -33,7 +33,7 @@ def set_fake_engine(app, engine="dummy"):
     app.extensions["task_manager"].resolve_engine = lambda: engine
 
 
-def fake_convert_ok(engine, src, dst):
+def fake_convert_ok(engine, src, dst, on_progress=None):
     dst = Path(dst)
     dst.parent.mkdir(parents=True, exist_ok=True)
     dst.write_bytes(b"x" * 2048)
@@ -207,7 +207,7 @@ class TestTaskFlow:
         patcher = pytest.MonkeyPatch()
         patcher.setattr(
             ec, "convert_file",
-            lambda engine, s, d: (ec.STATUS_FAILED, "Error: Cannot decrypt DRM"),
+            lambda engine, s, d, on_progress=None: (ec.STATUS_FAILED, "Error: Cannot decrypt DRM"),
         )
         try:
             upload_file(client, "锁.epub")
@@ -224,7 +224,7 @@ class TestTaskFlow:
         patcher = pytest.MonkeyPatch()
         patcher.setattr(
             ec, "convert_file",
-            lambda engine, s, d: (ec.STATUS_SKIPPED, "输出已存在"),
+            lambda engine, s, d, on_progress=None: (ec.STATUS_SKIPPED, "输出已存在"),
         )
         try:
             upload_file(client, "a.epub")
@@ -278,6 +278,26 @@ class TestTaskFlow:
         finally:
             patcher.undo()
         assert "扫描版" not in (tasks[0]["message"] or "")
+
+    def test_progress_reported_to_task(self, client, app_env, tmp_path):
+        """M3：引擎 stderr 进度经 on_progress 写入任务，轮询可见。"""
+        set_fake_engine(app_env)
+
+        def fake_with_progress(engine, src, dst, on_progress=None):
+            if on_progress:
+                on_progress(42)
+            return fake_convert_ok(engine, src, dst)
+
+        patcher = pytest.MonkeyPatch()
+        patcher.setattr(ec, "convert_file", fake_with_progress)
+        try:
+            upload_file(client, "a.epub")
+            _, tasks = convert_and_wait(
+                client, app_env, {"format": "mobi", "output_dir": str(tmp_path)})
+        finally:
+            patcher.undo()
+        assert tasks[0]["status"] == "done"
+        assert tasks[0]["progress"] == 42
 
     def test_failed_task_does_not_block_queue(self, client, app_env, tmp_path):
         """F5：单个任务失败不影响队列中的其他任务。"""

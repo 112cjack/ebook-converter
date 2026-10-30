@@ -194,8 +194,12 @@ class TaskManager:
             self._finish(task_id, FAILED, error="未检测到 Calibre，请先安装或在设置中指定路径")
             return
 
+        def on_progress(pct):
+            task["progress"] = max(0, min(100, int(pct)))
+
         try:
-            status, message = ec.convert_file(engine, task["src_path"], dst)
+            status, message = ec.convert_file(engine, task["src_path"], dst,
+                                              on_progress=on_progress)
         except OSError as exc:
             self._finish(task_id, FAILED, error=f"无法启动转换引擎: {exc}")
             return

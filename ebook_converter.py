@@ -15,9 +15,11 @@ epub / mobi / azw3 / pdf / docx / rtf / fb2 / cbz / chm / txt 等。
 """
 
 import argparse
+import re
 import shutil
 import subprocess
 import sys
+import threading
 from pathlib import Path
 
 # Calibre 官方支持的输入格式（https://manual.calibre-ebook.com/conversion.html）
@@ -122,11 +124,32 @@ def _fail(dst, message):
     return STATUS_FAILED, message
 
 
-def convert_file(engine, src, dst):
+# 引擎 stderr 进度输出形如 "34%"（用 \r 覆盖刷新）
+_PROGRESS_PATTERN = re.compile(r"(\d{1,3})\s*%")
+
+
+def _drain(stream, chunks, on_progress):
+    """逐行读取引擎输出：收集 stderr 内容并回调解析出的进度百分比（只增不减）。"""
+    highest = 0
+    try:
+        for line in stream:
+            chunks.append(line)
+            if on_progress is not None:
+                for match in _PROGRESS_PATTERN.finditer(line):
+                    pct = int(match.group(1))
+                    if 0 <= pct <= 100 and pct > highest:
+                        highest = pct
+                        on_progress(pct)
+    except (OSError, ValueError):
+        pass  # 管道随子进程关闭产生的读写异常不影响结果判定
+
+
+def convert_file(engine, src, dst, on_progress=None):
     """转换单个文件，返回 (status, message)。
 
     status 取值：ok / failed / skipped。任何情况下都不改动源文件；
     失败（含超时、Ctrl+C 中断）时清理已产生的残缺输出。
+    on_progress(pct) 可选：转换过程中收到引擎 stderr 解析出的百分比（0~100）。
     """
     src, dst = Path(src), Path(dst)
     if dst.exists():
@@ -144,12 +167,33 @@ def convert_file(engine, src, dst):
             encoding="utf-8",
             errors="replace",
         )
-        try:
-            _, stderr = proc.communicate(timeout=CONVERT_TIMEOUT_SECONDS)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            proc.communicate()
-            return _fail(dst, "转换超时")
+        if on_progress is None:
+            try:
+                _, stderr = proc.communicate(timeout=CONVERT_TIMEOUT_SECONDS)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.communicate()
+                return _fail(dst, "转换超时")
+        else:
+            # ebook-convert 把进度与日志输出到 stdout（如 "67% 正在运行 … 插件"），
+            # 错误信息走 stderr；两路都排空防管道写满阻塞
+            chunks = []
+            err_chunks = []
+            readers = [
+                threading.Thread(target=_drain, args=(proc.stdout, chunks, on_progress), daemon=True),
+                threading.Thread(target=_drain, args=(proc.stderr, err_chunks, None), daemon=True),
+            ]
+            for reader in readers:
+                reader.start()
+            try:
+                proc.wait(timeout=CONVERT_TIMEOUT_SECONDS)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
+                return _fail(dst, "转换超时")
+            for reader in readers:
+                reader.join(timeout=5)
+            stderr = "".join(err_chunks)
     except KeyboardInterrupt:
         if proc is not None:
             proc.kill()

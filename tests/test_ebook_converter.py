@@ -2,6 +2,7 @@
 """ebook_converter 的测试。"""
 
 import importlib.util
+import io
 import subprocess
 from pathlib import Path
 
@@ -294,6 +295,130 @@ class TestRunConversion:
 
         results = ec.run_conversion(src, "mobi", tmp_path / "out", engine="dummy")
         assert "扫描版" not in results[0][2]
+
+
+class FakeStreamPopen:
+    """流式读取路径的 Popen 替身：stderr/stdout 为内存流，wait 可定时或超时。"""
+
+    def __init__(self, returncode=0, stderr="", stdout="", action=None,
+                 output_file=None):
+        self.returncode = returncode
+        self.stderr = io.StringIO(stderr)
+        self.stdout = io.StringIO(stdout)
+        self._action = action
+        self._action_fired = False
+        self._output_file = output_file
+        self.killed = False
+
+    def wait(self, timeout=None):
+        if self._action is not None and not self._action_fired:
+            self._action_fired = True
+            self._action()
+        if self._output_file is not None:
+            Path(self._output_file).write_bytes(b"x" * 2048)
+        return self.returncode
+
+    def kill(self):
+        self.killed = True
+
+
+class TestConvertFileProgress:
+    """on_progress 流式路径（M3）：解析 stderr 百分比，行为与默认路径一致。"""
+
+    def test_reports_parsed_percentages_monotonic(self, tmp_path, monkeypatch):
+        src = tmp_path / "a.txt"
+        src.write_text("x")
+        dst = tmp_path / "a.epub"
+        monkeypatch.setattr(
+            ec.subprocess, "Popen",
+            lambda *a, **k: FakeStreamPopen(stdout="Parsing...\r10%\r5%\r50%\r100%\rdone\n",
+                                            output_file=dst),
+        )
+        seen = []
+        status, _ = ec.convert_file("dummy-engine", src, dst, on_progress=seen.append)
+        assert status == ec.STATUS_OK
+        assert seen == [10, 50, 100]  # 回退的 5% 被忽略
+
+    def test_ok_requires_output_file(self, tmp_path, monkeypatch):
+        src = tmp_path / "a.txt"
+        src.write_text("x")
+        monkeypatch.setattr(
+            ec.subprocess, "Popen",
+            lambda *a, **k: FakeStreamPopen(stderr="50%"),
+        )
+        status, msg = ec.convert_file("dummy-engine", src, tmp_path / "a.epub",
+                                      on_progress=lambda pct: None)
+        assert status == ec.STATUS_FAILED
+        assert "未产生输出" in msg
+
+    def test_ok_with_output_file(self, tmp_path, monkeypatch):
+        src = tmp_path / "a.txt"
+        src.write_text("x")
+        dst = tmp_path / "a.epub"
+        monkeypatch.setattr(
+            ec.subprocess, "Popen",
+            lambda *a, **k: FakeStreamPopen(output_file=dst),
+        )
+        status, _ = ec.convert_file("dummy-engine", src, dst, on_progress=lambda pct: None)
+        assert status == ec.STATUS_OK
+
+    def test_failed_on_nonzero_exit(self, tmp_path, monkeypatch):
+        src = tmp_path / "a.txt"
+        src.write_text("x")
+        monkeypatch.setattr(
+            ec.subprocess, "Popen",
+            lambda *a, **k: FakeStreamPopen(returncode=1, stderr="boom\n"),
+        )
+        status, msg = ec.convert_file("dummy-engine", src, tmp_path / "a.epub",
+                                      on_progress=lambda pct: None)
+        assert status == ec.STATUS_FAILED
+        assert "boom" in msg
+
+    def test_failed_cleanup_removes_partial_output(self, tmp_path, monkeypatch):
+        src = tmp_path / "a.txt"
+        src.write_text("x")
+        dst = tmp_path / "a.epub"
+
+        def action():
+            dst.write_bytes(b"tiny")  # 残缺输出
+
+        monkeypatch.setattr(
+            ec.subprocess, "Popen",
+            lambda *a, **k: FakeStreamPopen(action=action),
+        )
+        status, _ = ec.convert_file("dummy-engine", src, dst, on_progress=lambda pct: None)
+        assert status == ec.STATUS_FAILED
+        assert not dst.exists()
+
+    def test_timeout_kills_and_cleans_up(self, tmp_path, monkeypatch):
+        src = tmp_path / "a.txt"
+        src.write_text("x")
+        dst = tmp_path / "a.epub"
+
+        def timeout_action():
+            (_ for _ in ()).throw(subprocess.TimeoutExpired(cmd="x", timeout=1))
+
+        fake = FakeStreamPopen(action=timeout_action)
+        monkeypatch.setattr(ec.subprocess, "Popen", lambda *a, **k: fake)
+        status, msg = ec.convert_file("dummy-engine", src, dst, on_progress=lambda pct: None)
+        assert status == ec.STATUS_FAILED
+        assert "超时" in msg
+        assert fake.killed
+        assert not dst.exists()
+
+    def test_ignores_non_percentage_lines(self, tmp_path, monkeypatch):
+        src = tmp_path / "a.txt"
+        src.write_text("x")
+        dst = tmp_path / "a.epub"
+        monkeypatch.setattr(
+            ec.subprocess, "Popen",
+            lambda *a, **k: FakeStreamPopen(stdout="第 1/3 步\n没有百分号的行\n100%\n",
+                                            output_file=dst),
+        )
+        seen = []
+        status, _ = ec.convert_file("dummy-engine", src, dst, on_progress=seen.append)
+        assert status == ec.STATUS_OK
+        assert seen == [100]
 
 
 def make_text_pdf(path):
