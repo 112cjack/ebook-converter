@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
-"""ebook_converter MVP 的测试。"""
+"""ebook_converter 的测试。"""
 
-import shutil
+import importlib.util
 import subprocess
 from pathlib import Path
 
 import pytest
 
 import ebook_converter as ec
+
+fitz_available = importlib.util.find_spec("fitz") is not None
 
 
 class TestFormatTables:
@@ -46,11 +48,34 @@ class TestScanFolder:
         assert [f.name for f in ec.scan_folder(tmp_path)] == ["a.txt", "b.txt", "c.txt"]
 
 
-class FakeProc:
-    def __init__(self, returncode=0, stderr="", stdout=""):
+class FakePopen:
+    """subprocess.Popen 替身：communicate 时可产生输出文件或抛异常。"""
+
+    def __init__(self, returncode=0, stderr="", stdout="", action=None):
         self.returncode = returncode
-        self.stderr = stderr
-        self.stdout = stdout
+        self._stderr = stderr
+        self._stdout = stdout
+        self._action = action
+        self._action_fired = False
+        self.killed = False
+
+    def communicate(self, timeout=None):
+        if self._action is not None and not self._action_fired:
+            self._action_fired = True
+            self._action()
+        return (self._stdout, self._stderr)
+
+    def kill(self):
+        self.killed = True
+
+
+def make_engine_action(dst):
+    """返回一个 action：转换“成功”时写出目标文件（2048 字节）。"""
+
+    def action():
+        Path(dst).write_bytes(b"x" * 2048)
+
+    return action
 
 
 class TestConvertFile:
@@ -67,19 +92,17 @@ class TestConvertFile:
         src = tmp_path / "a.txt"
         src.write_text("x")
         dst = tmp_path / "a.epub"
-
-        def fake_run(cmd, **kwargs):
-            Path(cmd[2]).write_bytes(b"x" * 2048)
-            return FakeProc()
-
-        monkeypatch.setattr(ec.subprocess, "run", fake_run)
+        monkeypatch.setattr(
+            ec.subprocess, "Popen",
+            lambda *a, **k: FakePopen(action=make_engine_action(dst)),
+        )
         status, msg = ec.convert_file("dummy-engine", src, dst)
         assert status == ec.STATUS_OK
 
     def test_failed_on_nonzero_exit(self, tmp_path, monkeypatch):
         src = tmp_path / "a.txt"
         src.write_text("x")
-        monkeypatch.setattr(ec.subprocess, "run", lambda *a, **k: FakeProc(1, stderr="boom"))
+        monkeypatch.setattr(ec.subprocess, "Popen", lambda *a, **k: FakePopen(1, stderr="boom"))
         status, msg = ec.convert_file("dummy-engine", src, tmp_path / "a.epub")
         assert status == ec.STATUS_FAILED
         assert "boom" in msg
@@ -87,7 +110,7 @@ class TestConvertFile:
     def test_failed_when_no_output_file(self, tmp_path, monkeypatch):
         src = tmp_path / "a.txt"
         src.write_text("x")
-        monkeypatch.setattr(ec.subprocess, "run", lambda *a, **k: FakeProc())
+        monkeypatch.setattr(ec.subprocess, "Popen", lambda *a, **k: FakePopen())
         status, msg = ec.convert_file("dummy-engine", src, tmp_path / "a.epub")
         assert status == ec.STATUS_FAILED
         assert "未产生输出" in msg
@@ -97,11 +120,10 @@ class TestConvertFile:
         src.write_text("x")
         dst = tmp_path / "a.epub"
 
-        def fake_run(cmd, **kwargs):
-            Path(cmd[2]).write_bytes(b"x" * 10)  # 小于 1KB
-            return FakeProc()
+        def action():
+            dst.write_bytes(b"x" * 10)  # 小于 1KB
 
-        monkeypatch.setattr(ec.subprocess, "run", fake_run)
+        monkeypatch.setattr(ec.subprocess, "Popen", lambda *a, **k: FakePopen(action=action))
         status, msg = ec.convert_file("dummy-engine", src, dst)
         assert status == ec.STATUS_FAILED
         assert "10" in msg
@@ -110,17 +132,50 @@ class TestConvertFile:
         src = tmp_path / "a.txt"
         src.write_text("x")
         monkeypatch.setattr(
-            ec.subprocess, "run",
-            lambda *a, **k: (_ for _ in ()).throw(subprocess.TimeoutExpired(cmd="x", timeout=1)),
+            ec.subprocess, "Popen",
+            lambda *a, **k: FakePopen(
+                action=lambda: (_ for _ in ()).throw(
+                    subprocess.TimeoutExpired(cmd="x", timeout=1))),
         )
         status, msg = ec.convert_file("dummy-engine", src, tmp_path / "a.epub")
         assert status == ec.STATUS_FAILED
         assert "超时" in msg
 
+    def test_failed_cleanup_removes_partial_output(self, tmp_path, monkeypatch):
+        """转换失败后残缺输出必须被清理，否则下次会被'输出已存在'误跳过。"""
+        src = tmp_path / "a.txt"
+        src.write_text("x")
+        dst = tmp_path / "a.epub"
+
+        def action():
+            dst.write_bytes(b"x" * 10)  # 残缺输出
+
+        monkeypatch.setattr(ec.subprocess, "Popen", lambda *a, **k: FakePopen(action=action))
+        status, _ = ec.convert_file("dummy-engine", src, dst)
+        assert status == ec.STATUS_FAILED
+        assert not dst.exists()
+
+    def test_keyboard_interrupt_cleans_up_and_reraises(self, tmp_path, monkeypatch):
+        """Ctrl+C 中断时：杀掉子进程、清理残缺输出、向上抛出 KeyboardInterrupt。"""
+        src = tmp_path / "a.txt"
+        src.write_text("x")
+        dst = tmp_path / "a.epub"
+
+        def action():
+            dst.write_bytes(b"partial output")  # 中断前已写出部分内容
+            raise KeyboardInterrupt
+
+        fake = FakePopen(action=action)
+        monkeypatch.setattr(ec.subprocess, "Popen", lambda *a, **k: fake)
+        with pytest.raises(KeyboardInterrupt):
+            ec.convert_file("dummy-engine", src, dst)
+        assert fake.killed
+        assert not dst.exists()
+
     def test_source_file_untouched(self, tmp_path, monkeypatch):
         src = tmp_path / "a.txt"
         src.write_text("内容")
-        monkeypatch.setattr(ec.subprocess, "run", lambda *a, **k: FakeProc(1, stderr="x"))
+        monkeypatch.setattr(ec.subprocess, "Popen", lambda *a, **k: FakePopen(1, stderr="x"))
         ec.convert_file("dummy-engine", src, tmp_path / "a.epub")
         assert src.read_text() == "内容"
 
@@ -166,10 +221,121 @@ class TestRunConversion:
         assert [Path(s).name for s, _, _ in results] == ["a.txt", "b.epub"]
         assert all(d.suffix == ".mobi" and d.parent == out for _, _, d in recorded)
 
+    def test_duplicate_stem_reports_conflict(self, tmp_path, monkeypatch):
+        """a.txt 与 a.epub 同转 mobi 时，第二个必须明确提示重名而不是默默跳过。"""
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "a.txt").write_text("x")
+        (src / "a.epub").write_text("x")
+
+        monkeypatch.setattr(
+            ec, "convert_file",
+            lambda engine, s, d: (ec.STATUS_OK, "ok"),
+        )
+        results = ec.run_conversion(src, "mobi", tmp_path / "out", engine="dummy")
+
+        # 扫描按文件名排序，a.epub 排在 a.txt 前面、先转换
+        statuses = {Path(s).name: (st, msg) for s, st, msg in results}
+        assert statuses["a.epub"][0] == ec.STATUS_OK
+        assert statuses["a.txt"][0] == ec.STATUS_SKIPPED
+        assert "重名" in statuses["a.txt"][1]
+        assert "a.epub" in statuses["a.txt"][1]
+
+    def test_on_start_and_on_result_callbacks(self, tmp_path, monkeypatch):
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "a.txt").write_text("x")
+        (src / "b.txt").write_text("x")
+
+        monkeypatch.setattr(
+            ec, "convert_file",
+            lambda engine, s, d: (ec.STATUS_OK, "ok"),
+        )
+        started, progress = [], []
+        ec.run_conversion(src, "mobi", tmp_path / "out", engine="dummy",
+                          on_start=started.append,
+                          on_result=lambda s, st, msg: progress.append(Path(s).name))
+
+        assert [f.name for f in started[0]] == ["a.txt", "b.txt"]  # 开始前拿到完整清单
+        assert progress == ["a.txt", "b.txt"]  # 每转完一个立即回调
+
     def test_raises_when_engine_missing(self, tmp_path, monkeypatch):
         monkeypatch.setattr(ec, "find_engine", lambda: None)
         with pytest.raises(ec.EngineNotFoundError):
             ec.run_conversion(tmp_path, "mobi", tmp_path / "out")
+
+    def test_scanned_pdf_warning_added_for_text_target(self, tmp_path, monkeypatch):
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "scan.pdf").write_text("x")
+        monkeypatch.setattr(ec, "convert_file", lambda engine, s, d: (ec.STATUS_OK, "ok"))
+        monkeypatch.setattr(ec, "pdf_has_text_layer", lambda p, **k: False)
+
+        results = ec.run_conversion(src, "mobi", tmp_path / "out", engine="dummy")
+        assert results[0][1] == ec.STATUS_OK
+        assert "扫描版 PDF" in results[0][2]
+
+    def test_scanned_pdf_no_warning_for_pdf_target(self, tmp_path, monkeypatch):
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "scan.pdf").write_text("x")
+        monkeypatch.setattr(ec, "convert_file", lambda engine, s, d: (ec.STATUS_OK, "ok"))
+        monkeypatch.setattr(ec, "pdf_has_text_layer", lambda p, **k: False)
+
+        results = ec.run_conversion(src, "pdf", tmp_path / "out", engine="dummy")
+        assert "扫描版" not in results[0][2]
+
+    def test_text_pdf_no_warning(self, tmp_path, monkeypatch):
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "book.pdf").write_text("x")
+        monkeypatch.setattr(ec, "convert_file", lambda engine, s, d: (ec.STATUS_OK, "ok"))
+        monkeypatch.setattr(ec, "pdf_has_text_layer", lambda p, **k: True)
+
+        results = ec.run_conversion(src, "mobi", tmp_path / "out", engine="dummy")
+        assert "扫描版" not in results[0][2]
+
+
+def make_text_pdf(path):
+    """用 PyMuPDF 生成一个有文字层的 PDF。"""
+    import fitz
+
+    doc = fitz.open()
+    page = doc.new_page()
+    page.insert_textbox(fitz.Rect(72, 72, 500, 500), "Hello 电子书 text layer " * 20)
+    doc.save(path)
+    doc.close()
+
+
+def make_scanned_pdf(path):
+    """用 PyMuPDF 生成一个无文字层的“扫描版” PDF（纯图形）。"""
+    import fitz
+
+    doc = fitz.open()
+    page = doc.new_page()
+    page.draw_rect(fitz.Rect(100, 100, 400, 400), color=(0, 0, 0), width=2)
+    doc.save(path)
+    doc.close()
+
+
+@pytest.mark.skipif(not fitz_available, reason="未安装 PyMuPDF")
+class TestPdfTextLayerDetection:
+    def test_text_pdf_detected(self, tmp_path):
+        pdf = tmp_path / "text.pdf"
+        make_text_pdf(pdf)
+        assert ec.pdf_has_text_layer(pdf) is True
+
+    def test_scanned_pdf_detected(self, tmp_path):
+        pdf = tmp_path / "scan.pdf"
+        make_scanned_pdf(pdf)
+        assert ec.pdf_has_text_layer(pdf) is False
+
+    def test_missing_file_returns_none(self, tmp_path):
+        assert ec.pdf_has_text_layer(tmp_path / "nope.pdf") is None
+
+    def test_missing_dependency_returns_none(self, monkeypatch, tmp_path):
+        monkeypatch.setitem(__import__("sys").modules, "fitz", None)
+        assert ec.pdf_has_text_layer(tmp_path / "any.pdf") is None
 
 
 def calibre_available():
@@ -185,3 +351,15 @@ class TestRealConversion:
         status, msg = ec.convert_file(ec.find_engine(), src, tmp_path / "示例书籍.epub")
         assert status == ec.STATUS_OK, msg
         assert (tmp_path / "示例书籍.epub").stat().st_size >= ec.MIN_OUTPUT_BYTES
+
+    @pytest.mark.skipif(not calibre_available() or not fitz_available,
+                        reason="本机未安装 Calibre 或 PyMuPDF")
+    def test_scanned_pdf_real_detection_warning(self, tmp_path, monkeypatch):
+        """真实 Calibre + 真实扫描版 PDF：整条链路应给出扫描版警告。"""
+        src = tmp_path / "扫描书.pdf"
+        make_scanned_pdf(src)
+        monkeypatch.setattr(ec, "convert_file",
+                            lambda engine, s, d: (ec.STATUS_OK, "ok"))  # 不真转，只验证警告链路
+        results = ec.run_conversion(tmp_path, "mobi", tmp_path / "out",
+                                    engine=ec.find_engine())
+        assert "扫描版 PDF" in results[0][2]
