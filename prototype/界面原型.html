@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>电子书转换器 · 交互原型</title>
+<style>body{margin:0;padding:24px;background:#888888}.proto-wrap{max-width:1080px;margin:0 auto}</style>
+</head>
+<body>
+<div class="proto-wrap">
+<script src="https://unpkg.com/lucide@0.474.0/dist/umd/lucide.min.js"></script>
+<div id="ebook-converter-demo">
+<style>
+#ebook-converter-demo{
+  color-scheme: light dark;
+  --x-paper: light-dark(#F5F3EE, #1B1D21);
+  --x-surface: light-dark(#FCFBF8, #24272C);
+  --x-dropbg: light-dark(#FAF8F3, #202328);
+  --x-ink: light-dark(#26221D, #E9E5DC);
+  --x-muted: light-dark(#6E6A60, #A6A196);
+  --x-line: light-dark(#E3DFD5, #3A3E44);
+  --x-seal: light-dark(#B3342B, #E07B62);
+  --x-sealbg: light-dark(#B3342B, #B84A38);
+  --x-moss: light-dark(#3E6B4F, #7FB08E);
+  --x-clay: light-dark(#9E3B2F, #D97B66);
+  --x-serif: Georgia, "Songti SC", "SimSun", serif;
+  --x-mono: Consolas, "Courier New", monospace;
+  font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  font-size: 14px; line-height: 1.55; color: var(--x-ink);
+}
+#ebook-converter-demo *{ box-sizing: border-box; }
+#ebook-converter-demo .x-sr{
+  position:absolute; width:1px; height:1px; overflow:hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+#ebook-converter-demo .x-frame{
+  position: relative;
+  background: var(--x-paper);
+  border: 1px solid var(--x-line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+/* ── top bar ── */
+#ebook-converter-demo .x-top{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding: 12px 20px; background: var(--x-surface);
+  border-bottom: 1px solid var(--x-line);
+}
+#ebook-converter-demo .x-brand{ display:flex; align-items:center; gap:12px; min-width:0; }
+#ebook-converter-demo .x-seal{
+  width:34px; height:34px; flex:none; border-radius:7px;
+  background: var(--x-sealbg); color:#fff;
+  font-family: var(--x-serif); font-size:19px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+}
+#ebook-converter-demo .x-title{ font-family: var(--x-serif); font-size:17px; font-weight:700; letter-spacing:.5px; }
+#ebook-converter-demo .x-sub{ font-size:12px; color: var(--x-muted); }
+#ebook-converter-demo .x-topright{ display:flex; align-items:center; gap:8px; flex:none; }
+#ebook-converter-demo .x-cal{
+  display:inline-flex; align-items:center; gap:7px;
+  font-size:12px; color: var(--x-moss);
+  padding:5px 10px; border:1px solid var(--x-line); border-radius:999px;
+  background: var(--x-paper); cursor: help;
+}
+#ebook-converter-demo .x-dot{ width:8px; height:8px; border-radius:50%; background: var(--x-moss); }
+/* ── buttons ── */
+#ebook-converter-demo .x-btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  font: inherit; font-size:13px; color: var(--x-ink);
+  background: var(--x-surface); border:1px solid var(--x-line); border-radius:8px;
+  padding: 7px 12px; min-height:32px;
+}
+#ebook-converter-demo .x-btn:hover{ border-color: var(--x-muted); }
+#ebook-converter-demo .x-linkbtn{
+  font: inherit; font-size:13px; color: var(--x-seal);
+  background:none; border:none; padding:6px 4px; text-decoration: underline;
+  text-underline-offset: 3px;
+}
+#ebook-converter-demo .x-primary{
+  font: inherit; font-size:14px; font-weight:600; color:#fff;
+  background: light-dark(#26221D, #E9E5DC);
+  color: light-dark(#FFFFFF, #1B1D21);
+  border:none; border-radius:9px; padding: 10px 22px; min-height:42px;
+}
+#ebook-converter-demo .x-primary:hover{ filter: brightness(1.12); }
+#ebook-converter-demo .x-primary:disabled{ opacity:.45; cursor: not-allowed; filter:none; }
+#ebook-converter-demo .x-icobtn{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:30px; height:30px; border-radius:7px;
+  background:none; border:1px solid transparent; color: var(--x-muted);
+}
+#ebook-converter-demo .x-icobtn:hover{ color: var(--x-ink); border-color: var(--x-line); background: var(--x-paper); }
+/* ── main ── */
+#ebook-converter-demo .x-main{ padding:20px; max-width:1020px; margin:0 auto; width:100%; }
+#ebook-converter-demo .x-drop{
+  border: 1.5px dashed var(--x-line); border-radius: 12px;
+  background: var(--x-dropbg);
+  padding: 26px 16px 22px; text-align:center;
+  transition: border-color .2s ease-out, background .2s ease-out;
+}
+#ebook-converter-demo .x-drop.is-over{ border-color: var(--x-seal); background: light-dark(#F3E9E4, #2A2624); }
+#ebook-converter-demo .x-dropicon{ width:30px; height:30px; color: var(--x-muted); }
+#ebook-converter-demo .x-droptitle{ font-size:15px; font-weight:600; margin-top:8px; }
+#ebook-converter-demo .x-dropsub{ font-size:12px; color: var(--x-muted); margin: 2px 0 8px; }
+#ebook-converter-demo .x-droprow{ display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; }
+#ebook-converter-demo .x-droprow .x-btn{ min-height:38px; padding: 8px 18px; }
+#ebook-converter-demo .x-fmts{ margin-top:14px; font-size:12px; color: var(--x-muted); letter-spacing:.3px; }
+/* ── list ── */
+#ebook-converter-demo .x-listhead{
+  display:flex; align-items:center; justify-content:space-between;
+  margin: 20px 2px 8px;
+}
+#ebook-converter-demo .x-listtitle{ font-weight:600; }
+#ebook-converter-demo .x-empty{
+  border:1px dashed var(--x-line); border-radius:10px;
+  padding:18px; text-align:center; color: var(--x-muted); font-size:13px;
+}
+#ebook-converter-demo .x-row{
+  display:grid;
+  grid-template-columns: 8px minmax(140px,1.3fr) auto minmax(160px,1.6fr) auto;
+  gap: 6px 14px; align-items:center;
+  background: var(--x-surface);
+  border:1px solid var(--x-line); border-radius:10px;
+  padding: 10px 12px 10px 0; margin-bottom:8px;
+}
+#ebook-converter-demo .x-spine{ width:8px; height:100%; min-height:44px; border-radius:10px 0 0 10px; }
+#ebook-converter-demo .x-name{ font-weight:600; overflow-wrap:anywhere; }
+#ebook-converter-demo .x-meta{ font-size:12px; color: var(--x-muted); font-family: var(--x-mono); }
+#ebook-converter-demo .x-pair{ display:flex; align-items:center; gap:5px; font-size:12px; }
+#ebook-converter-demo .x-pair i, #ebook-converter-demo .x-pair svg{ width:13px; height:13px; color: var(--x-muted); }
+#ebook-converter-demo .x-chip{
+  padding: 2px 8px; border-radius:6px; font-weight:600; letter-spacing:.4px;
+  border:1px solid var(--x-line); color: var(--x-muted); background: var(--x-paper);
+}
+#ebook-converter-demo .x-chip-to{ border-color: var(--x-seal); color: var(--x-seal); background: transparent; }
+#ebook-converter-demo .x-status{ display:flex; align-items:center; gap:9px; min-width:0; font-size:13px; }
+#ebook-converter-demo .x-badge{
+  font-size:12px; color: var(--x-muted);
+  border:1px solid var(--x-line); border-radius:999px; padding:2px 10px;
+}
+#ebook-converter-demo .x-prow{ display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
+#ebook-converter-demo .x-pbar{
+  flex:1; height:6px; min-width:70px; border-radius:999px;
+  background: light-dark(#ECE8DE, #33373D);
+}
+#ebook-converter-demo .x-pfill{
+  height:100%; border-radius:999px; background: var(--x-sealbg);
+  transition: width .15s linear;
+}
+#ebook-converter-demo .x-ptext{ font-size:12px; color: var(--x-muted); font-family: var(--x-mono); width:38px; text-align:right; }
+#ebook-converter-demo .x-stamp{
+  width:22px; height:22px; flex:none; border-radius:6px;
+  background: var(--x-sealbg); color:#fff;
+  display:inline-flex; align-items:center; justify-content:center;
+}
+#ebook-converter-demo .x-stamp svg{ width:14px; height:14px; }
+#ebook-converter-demo .x-done{ color: var(--x-moss); font-weight:600; white-space:nowrap; }
+#ebook-converter-demo .x-out{ font-size:12px; color: var(--x-muted); font-family: var(--x-mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#ebook-converter-demo .x-failwrap{ display:flex; flex-direction:column; gap:1px; min-width:0; }
+#ebook-converter-demo .x-fail{ color: var(--x-clay); font-weight:600; white-space:nowrap; display:inline-flex; align-items:center; gap:5px; }
+#ebook-converter-demo .x-fail svg{ width:14px; height:14px; }
+#ebook-converter-demo .x-reason{ font-size:12px; color: var(--x-muted); }
+#ebook-converter-demo .x-acts{ display:flex; align-items:center; gap:2px; }
+#ebook-converter-demo .x-mini{
+  display:inline-flex; align-items:center; gap:5px;
+  font: inherit; font-size:12px; color: var(--x-muted);
+  background:none; border:1px solid transparent; border-radius:7px;
+  padding:6px 8px; min-height:30px; white-space:nowrap;
+}
+#ebook-converter-demo .x-mini:hover{ color: var(--x-ink); border-color: var(--x-line); background: var(--x-paper); }
+#ebook-converter-demo .x-mini svg{ width:14px; height:14px; }
+/* ── action bar ── */
+#ebook-converter-demo .x-action{
+  display:flex; align-items:flex-end; justify-content:space-between; gap:18px; flex-wrap:wrap;
+  padding: 14px max(20px, calc((100% - 980px) / 2)) 10px;
+  border-top:1px solid var(--x-line); background: var(--x-surface);
+}
+#ebook-converter-demo .x-fmtgroup{ display:flex; flex-direction:column; gap:6px; }
+#ebook-converter-demo .x-fmtlabel{ font-size:12px; color: var(--x-muted); }
+#ebook-converter-demo .x-seg{ display:flex; gap:6px; flex-wrap:wrap; }
+#ebook-converter-demo .x-segbtn{
+  font: inherit; font-size:13px; font-weight:600; letter-spacing:.4px;
+  color: var(--x-ink); background: var(--x-paper);
+  border:1px solid var(--x-line); border-radius:8px;
+  padding: 8px 16px; min-height:38px;
+}
+#ebook-converter-demo .x-segbtn[aria-pressed="true"]{
+  border-color: var(--x-seal); color: var(--x-seal);
+  box-shadow: inset 0 0 0 1px var(--x-seal);
+}
+#ebook-converter-demo .x-segbtn:disabled{ opacity:.45; cursor:not-allowed; }
+#ebook-converter-demo .x-helper{ font-size:12px; color: var(--x-muted); min-height:18px; }
+#ebook-converter-demo .x-run{ display:flex; align-items:center; gap:16px; }
+#ebook-converter-demo .x-oprog{ display:flex; align-items:center; gap:8px; }
+#ebook-converter-demo .x-obar{
+  width:130px; height:6px; border-radius:999px;
+  background: light-dark(#ECE8DE, #33373D);
+}
+#ebook-converter-demo .x-ofill{ height:100%; border-radius:999px; background: var(--x-sealbg); transition: width .2s ease-out; }
+#ebook-converter-demo .x-otext{ font-size:12px; color: var(--x-muted); font-family: var(--x-mono); }
+#ebook-converter-demo .x-note{
+  padding: 0 max(20px, calc((100% - 980px) / 2)) 14px; font-size:12px; color: var(--x-muted);
+  background: var(--x-surface);
+}
+/* ── toasts ── */
+#ebook-converter-demo .x-toasts{
+  position:absolute; right:14px; bottom:14px; z-index:60;
+  display:flex; flex-direction:column; gap:8px; max-width: min(360px, 80%);
+}
+#ebook-converter-demo .x-toast{
+  background: var(--x-surface); border:1px solid var(--x-line);
+  border-left:3px solid var(--x-ink);
+  border-radius:9px; padding:9px 13px; font-size:13px;
+  box-shadow: 0 4px 14px light-dark(rgba(38,34,29,.14), rgba(0,0,0,.4));
+}
+#ebook-converter-demo .x-toast.is-warn{ border-left-color: var(--x-clay); }
+#ebook-converter-demo .x-toast.is-ok{ border-left-color: var(--x-moss); }
+/* ── dialogs ── */
+#ebook-converter-demo .x-dlg{
+  background: var(--x-surface); color: var(--x-ink);
+  border:1px solid var(--x-line); border-radius:12px;
+  padding:0; width:min(520px, 92%);
+}
+#ebook-converter-demo .x-dlg::backdrop{ background: rgba(15,14,12,.45); }
+#ebook-converter-demo .x-dlghead{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 13px 18px; border-bottom:1px solid var(--x-line);
+}
+#ebook-converter-demo .x-dlgtitle{ font-weight:700; font-family: var(--x-serif); letter-spacing:.5px; }
+#ebook-converter-demo .x-dlgbody{ padding: 16px 18px; display:flex; flex-direction:column; gap:12px; }
+#ebook-converter-demo .x-dlgfoot{
+  display:flex; justify-content:flex-end; gap:8px;
+  padding: 12px 18px; border-top:1px solid var(--x-line);
+}
+#ebook-converter-demo .x-field{ display:flex; flex-direction:column; gap:5px; font-size:13px; font-weight:600; }
+#ebook-converter-demo .x-input{
+  font: inherit; font-weight:400; font-size:13px; color: var(--x-ink);
+  background: var(--x-paper); border:1px solid var(--x-line); border-radius:8px;
+  padding: 8px 10px; min-height:36px;
+}
+#ebook-converter-demo .x-input.mono{ font-family: var(--x-mono); font-size:12px; }
+#ebook-converter-demo .x-hint{ margin:0; font-size:12px; color: var(--x-muted); font-weight:400; }
+#ebook-converter-demo .x-hrow{
+  display:grid; grid-template-columns: 74px minmax(0,1.4fr) auto minmax(0,1fr);
+  gap:10px; align-items:center; padding:8px 2px;
+  border-bottom:1px solid var(--x-line); font-size:13px;
+}
+#ebook-converter-demo .x-hrow:last-child{ border-bottom:none; }
+#ebook-converter-demo .x-htime{ color: var(--x-muted); font-size:12px; font-family: var(--x-mono); }
+#ebook-converter-demo .x-hname{ font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#ebook-converter-demo .x-hst-ok{ color: var(--x-moss); }
+#ebook-converter-demo .x-hst-bad{ color: var(--x-clay); }
+@media (max-width: 680px){
+  #ebook-converter-demo .x-row{ grid-template-columns: 8px 1fr auto; }
+  #ebook-converter-demo .x-pair{ display:none; }
+  #ebook-converter-demo .x-status{ grid-column: 2 / 4; }
+  #ebook-converter-demo .x-acts{ grid-column: 3; grid-row:1; }
+  #ebook-converter-demo .x-cal{ display:none; }
+  #ebook-converter-demo .x-top{ flex-wrap:wrap; }
+}
+@media (prefers-reduced-motion: reduce){
+  #ebook-converter-demo *{ transition: none !important; animation: none !important; }
+}
+</style>
+
+<div class="x-frame">
+  <header class="x-top">
+    <div class="x-brand">
+      <span class="x-seal" aria-hidden="true">转</span>
+      <div>
+        <div class="x-title">电子书转换器</div>
+        <div class="x-sub">本地转换 · 文件不出电脑</div>
+      </div>
+    </div>
+    <div class="x-topright">
+      <span class="x-cal" data-tooltip="C:\Program Files\Calibre2\ebook-convert.exe（演示数据）"><span class="x-dot" aria-hidden="true"></span>Calibre 已就绪</span>
+      <button class="x-btn cursor-interaction" id="x-histbtn" type="button"><i data-lucide="history" aria-hidden="true"></i>历史</button>
+      <button class="x-btn cursor-interaction" id="x-setbtn" type="button"><i data-lucide="settings" aria-hidden="true"></i>设置</button>
+    </div>
+  </header>
+
+  <div class="x-main">
+    <section class="x-drop" id="x-drop" aria-label="文件导入区">
+      <i data-lucide="book-open" class="x-dropicon" aria-hidden="true"></i>
+      <div class="x-droptitle">拖拽电子书文件到此处</div>
+      <div class="x-dropsub">或</div>
+      <div class="x-droprow">
+        <label class="x-btn cursor-interaction" for="x-file">选择文件</label>
+        <input type="file" id="x-file" class="x-sr" multiple accept=".epub,.mobi,.azw3,.pdf,.txt,.docx" aria-label="选择要转换的电子书文件">
+        <button class="x-linkbtn cursor-interaction" id="x-sample" type="button">添加示例文件</button>
+      </div>
+      <div class="x-fmts">支持 EPUB · MOBI · AZW3 · PDF · TXT · DOCX</div>
+    </section>
+
+    <div class="x-listhead">
+      <span class="x-listtitle">转换列表<span id="x-count"></span></span>
+      <button class="x-linkbtn cursor-interaction" id="x-clear" type="button">清空列表</button>
+    </div>
+    <div id="x-list"></div>
+    <div class="x-empty" id="x-empty">还没有文件。拖拽导入，或点击上面「选择文件 / 添加示例文件」开始。</div>
+  </div>
+
+  <div class="x-action">
+    <div class="x-fmtgroup">
+      <span class="x-fmtlabel" id="x-fmtlabel">输出格式</span>
+      <div class="x-seg" id="x-seg" role="group" aria-labelledby="x-fmtlabel">
+        <button type="button" class="x-segbtn cursor-interaction" data-to="EPUB" aria-pressed="false">EPUB</button>
+        <button type="button" class="x-segbtn cursor-interaction" data-to="PDF" aria-pressed="false">PDF</button>
+        <button type="button" class="x-segbtn cursor-interaction" data-to="TXT" aria-pressed="false">TXT</button>
+        <button type="button" class="x-segbtn cursor-interaction" data-to="MOBI" aria-pressed="false">MOBI</button>
+      </div>
+      <div class="x-helper" id="x-helper">请先选择输出格式</div>
+    </div>
+    <div class="x-run">
+      <div class="x-oprog" aria-hidden="true">
+        <div class="x-obar"><div class="x-ofill" id="x-ofill" style="width:0%"></div></div>
+        <span class="x-otext" id="x-otext">0/0</span>
+      </div>
+      <button class="x-primary cursor-interaction" id="x-go" type="button" disabled>开始转换</button>
+    </div>
+  </div>
+  <div class="x-note">交互原型 · 转换过程为模拟数据，用于确认界面布局与操作流程</div>
+
+  <div class="x-toasts" id="x-toasts"></div>
+  <div class="x-sr" aria-live="polite" id="x-live"></div>
+
+  <dialog id="x-setdlg" class="x-dlg" aria-labelledby="x-settitle">
+    <div class="x-dlghead">
+      <span class="x-dlgtitle" id="x-settitle">设置</span>
+      <button class="x-icobtn cursor-interaction" id="x-setclose" type="button" aria-label="关闭设置"><i data-lucide="x" aria-hidden="true"></i></button>
+    </div>
+    <div class="x-dlgbody">
+      <label class="x-field">输出目录
+        <input class="x-input" id="x-outdir" value="D:\电子书转换输出">
+      </label>
+      <label class="x-field">Calibre 路径
+        <input class="x-input mono" id="x-calpath" value="C:\Program Files\Calibre2\ebook-convert.exe">
+      </label>
+      <p class="x-hint">演示原型：设置仅保存在当前页面，刷新后恢复默认值。</p>
+    </div>
+    <div class="x-dlgfoot">
+      <button class="x-btn cursor-interaction" id="x-setcancel" type="button">取消</button>
+      <button class="x-primary cursor-interaction" id="x-setsave" type="button" style="min-height:36px; padding:7px 16px;">保存设置</button>
+    </div>
+  </dialog>
+
+  <dialog id="x-histdlg" class="x-dlg" aria-labelledby="x-histtitle">
+    <div class="x-dlghead">
+      <span class="x-dlgtitle" id="x-histtitle">转换历史</span>
+      <button class="x-icobtn cursor-interaction" id="x-histclose" type="button" aria-label="关闭历史"><i data-lucide="x" aria-hidden="true"></i></button>
+    </div>
+    <div class="x-dlgbody" id="x-histbody"></div>
+    <div class="x-dlgfoot">
+      <button class="x-btn cursor-interaction" id="x-histok" type="button">关闭</button>
+    </div>
+  </dialog>
+</div>
+
+<script>
+(function(){
+  var root = document.getElementById("ebook-converter-demo");
+  if(!root) return;
+  var $ = function(id){ return root.querySelector("#" + id); };
+
+  var FMTS = { epub:"EPUB", mobi:"MOBI", azw3:"AZW3", pdf:"PDF", txt:"TXT", docx:"DOCX" };
+  var OUTS = ["EPUB","PDF","TXT","MOBI"];
+  var SPINE = {
+    EPUB:"light-dark(#2E6E5E,#4E9382)", MOBI:"light-dark(#B0803A,#C99A55)",
+    PDF:"light-dark(#4A5560,#7C8794)", TXT:"light-dark(#8A8578,#A8A294)",
+    AZW3:"light-dark(#3E5C76,#6E8DA8)", DOCX:"light-dark(#7A5E8C,#A38BB4)"
+  };
+  var SAMPLES = [
+    { name:"三体.epub", size:1258291 },
+    { name:"人类简史.mobi", size:2457600 },
+    { name:"毕业论文.pdf", size:3250585 },
+    { name:"读书笔记.txt", size:28672 },
+    { name:"受DRM保护的小说.azw3", size:943718 }
+  ];
+  var MOCK_HISTORY = [
+    { time:"昨天 19:42", name:"三体.epub", pair:"EPUB → PDF", st:"ok",  note:"完成" },
+    { time:"昨天 20:15", name:"人类简史.mobi", pair:"MOBI → EPUB", st:"ok", note:"完成" },
+    { time:"前天 21:10", name:"扫描版讲义.pdf", pair:"PDF → TXT", st:"bad", note:"图片型 PDF，无文字层" }
+  ];
+
+  var state = { tasks:[], to:null, running:false, seq:0 };
+
+  function esc(s){ return s; } // DOM built with textContent only
+  function sizeFmt(n){
+    if(n >= 1048576) return (n/1048576).toFixed(1) + " MB";
+    if(n >= 1024) return Math.round(n/1024) + " KB";
+    return n + " B";
+  }
+  function fmtOf(name){
+    var m = /\.([a-z0-9]+)$/i.exec(name);
+    return m ? FMTS[m[1].toLowerCase()] : null;
+  }
+  function icons(){ if(window.lucide) lucide.createIcons({ attrs:{ width:16, height:16 } }); }
+  function announce(msg){ var el = $("x-live"); if(el) el.textContent = msg; }
+
+  function toast(msg, kind){
+    var box = $("x-toasts"); if(!box) return;
+    var d = document.createElement("div");
+    d.className = "x-toast" + (kind === "warn" ? " is-warn" : kind === "ok" ? " is-ok" : "");
+    d.setAttribute("role", "status");
+    d.textContent = msg;
+    box.appendChild(d);
+    setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); }, 4200);
+  }
+
+  function el(tag, cls, text){
+    var e = document.createElement(tag);
+    if(cls) e.className = cls;
+    if(text != null) e.textContent = text;
+    return e;
+  }
+  function icon(name){
+    var i = document.createElement("i");
+    i.setAttribute("data-lucide", name);
+    i.setAttribute("aria-hidden", "true");
+    return i;
+  }
+
+  function addFiles(list){
+    var added = 0, skipped = [], dup = 0;
+    Array.prototype.forEach.call(list, function(f){
+      var fmt = fmtOf(f.name);
+      if(!fmt){ skipped.push(f.name); return; }
+      var exists = state.tasks.some(function(t){ return t.name === f.name && t.size === f.size; });
+      if(exists){ dup++; return; }
+      state.tasks.push({ id: ++state.seq, name: f.name, size: f.size || 0, from: fmt, to: null,
+        status: "wait", progress: 0, outName: null, reason: null });
+      added++;
+    });
+    if(added){ announce("已添加 " + added + " 个文件"); toast("已添加 " + added + " 个文件", "ok"); }
+    if(dup){ toast("有 " + dup + " 个文件已在列表中，未重复添加", "warn"); }
+    if(skipped.length){ toast("已跳过不支持的格式：" + skipped.join("、"), "warn"); }
+    render();
+  }
+
+  function removeTask(id){
+    var t = state.tasks.find(function(x){ return x.id === id; });
+    if(!t || t.status === "run") return;
+    state.tasks = state.tasks.filter(function(x){ return x.id !== id; });
+    render();
+  }
+
+  function clearList(){
+    if(state.running) return;
+    state.tasks = [];
+    render();
+    announce("列表已清空");
+  }
+
+  function rowActs(t){
+    var acts = el("div", "x-acts");
+    if(t.status === "done"){
+      var open = el("button", "x-mini cursor-interaction");
+      open.type = "button";
+      open.appendChild(icon("folder-open"));
+      open.appendChild(document.createTextNode("打开文件夹"));
+      open.addEventListener("click", function(){
+        toast("演示环境：真实版本将打开输出文件夹 " + $("x-outdir").value, "info");
+      });
+      acts.appendChild(open);
+    }
+    if(t.status === "fail"){
+      var retry = el("button", "x-mini cursor-interaction");
+      retry.type = "button";
+      retry.appendChild(icon("rotate-ccw"));
+      retry.appendChild(document.createTextNode("重试"));
+      retry.addEventListener("click", function(){
+        t.status = "wait"; t.progress = 0; t.reason = null;
+        render();
+        toast("已重新加入队列，点击「开始转换」重试", "info");
+      });
+      acts.appendChild(retry);
+    }
+    if(t.status !== "run"){
+      var rm = el("button", "x-icobtn cursor-interaction");
+      rm.type = "button";
+      rm.setAttribute("aria-label", "移除 " + t.name);
+      rm.appendChild(icon("x"));
+      rm.addEventListener("click", function(){ removeTask(t.id); });
+      acts.appendChild(rm);
+    }
+    return acts;
+  }
+
+  function rowStatus(t){
+    var st = el("div", "x-status");
+    if(t.status === "wait"){
+      st.appendChild(el("span", "x-badge", "等待"));
+    } else if(t.status === "run"){
+      var prow = el("div", "x-prow");
+      var bar = el("div", "x-pbar");
+      var fill = el("div", "x-pfill");
+      fill.style.width = Math.round(t.progress) + "%";
+      bar.appendChild(fill);
+      prow.appendChild(bar);
+      var pt = el("span", "x-ptext", Math.round(t.progress) + "%");
+      prow.appendChild(pt);
+      st.appendChild(prow);
+    } else if(t.status === "done"){
+      var stamp = el("span", "x-stamp");
+      stamp.appendChild(icon("check"));
+      st.appendChild(stamp);
+      var wrap = el("div", "");
+      wrap.style.cssText = "min-width:0";
+      var d1 = el("div", "x-done", "已完成");
+      var d2 = el("div", "x-out", t.outName || "");
+      wrap.appendChild(d1); wrap.appendChild(d2);
+      st.appendChild(wrap);
+    } else {
+      var fw = el("div", "x-failwrap");
+      var f1 = el("span", "x-fail");
+      f1.appendChild(icon("alert-circle"));
+      f1.appendChild(document.createTextNode("转换失败"));
+      var f2 = el("span", "x-reason", t.reason || "");
+      fw.appendChild(f1); fw.appendChild(f2);
+      st.appendChild(fw);
+    }
+    return st;
+  }
+
+  function render(){
+    var list = $("x-list");
+    list.textContent = "";
+    state.tasks.forEach(function(t){
+      var row = el("div", "x-row");
+      row.setAttribute("data-id", t.id);
+      var spine = el("span", "x-spine");
+      spine.style.background = SPINE[t.from] || SPINE.TXT;
+      spine.setAttribute("aria-hidden", "true");
+      row.appendChild(spine);
+
+      var f = el("div", "x-file");
+      f.appendChild(el("div", "x-name", t.name));
+      f.appendChild(el("div", "x-meta", sizeFmt(t.size) + " · " + t.from));
+      row.appendChild(f);
+
+      var pair = el("div", "x-pair");
+      pair.appendChild(el("span", "x-chip", t.from));
+      pair.appendChild(icon("arrow-right"));
+      var toChip = t.to || state.to;
+      pair.appendChild(el("span", "x-chip" + (toChip ? " x-chip-to" : ""), toChip || "…"));
+      row.appendChild(pair);
+
+      row.appendChild(rowStatus(t));
+      row.appendChild(rowActs(t));
+      list.appendChild(row);
+    });
+
+    var n = state.tasks.length;
+    $("x-count").textContent = n ? "（" + n + "）" : "";
+    $("x-empty").style.display = n ? "none" : "";
+    $("x-clear").disabled = state.running || !n;
+    $("x-clear").style.opacity = ($("x-clear").disabled) ? ".45" : "";
+    updateAction();
+    updateOverall();
+    icons();
+  }
+
+  function updateAction(){
+    var wait = state.tasks.filter(function(t){ return t.status === "wait"; }).length;
+    var go = $("x-go");
+    go.disabled = state.running || !state.to || !wait;
+    go.textContent = state.running ? "转换中…" : "开始转换";
+    Array.prototype.forEach.call(root.querySelectorAll(".x-segbtn"), function(b){
+      b.disabled = state.running;
+    });
+    var helper = $("x-helper");
+    if(!state.to) helper.textContent = "请先选择输出格式";
+    else if(wait) helper.textContent = "输出为 " + state.to + " · 待转换 " + wait + " 个文件";
+    else helper.textContent = "输出为 " + state.to + " · 没有待转换文件";
+  }
+
+  function updateOverall(){
+    var total = state.tasks.length;
+    var fin = state.tasks.filter(function(t){ return t.status === "done" || t.status === "fail"; }).length;
+    $("x-ofill").style.width = total ? Math.round(fin / total * 100) + "%" : "0%";
+    $("x-otext").textContent = fin + "/" + total;
+  }
+
+  function updateTaskDom(t){
+    var row = root.querySelector('[data-id="' + t.id + '"]');
+    if(!row) return;
+    var fill = row.querySelector(".x-pfill");
+    var pt = row.querySelector(".x-ptext");
+    if(fill) fill.style.width = Math.round(t.progress) + "%";
+    if(pt) pt.textContent = Math.round(t.progress) + "%";
+  }
+
+  function animateTask(t, onEnd){
+    var isDrm = /DRM/i.test(t.name);
+    var p = t.progress || 0;
+    var iv = setInterval(function(){
+      p += 2 + Math.random() * 3.2;
+      if(isDrm && p >= 38){
+        clearInterval(iv);
+        t.status = "fail";
+        t.reason = "该书受 DRM 版权保护，无法转换（合规限制）";
+        render();
+        announce(t.name + " 转换失败：" + t.reason);
+        onEnd();
+        return;
+      }
+      if(p >= 100){
+        clearInterval(iv);
+        t.status = "done";
+        t.outName = t.name.replace(/\.[^.]+$/, "") + "." + (t.to || state.to || "epub").toLowerCase();
+        render();
+        announce(t.name + " 转换完成");
+        onEnd();
+        return;
+      }
+      t.progress = p;
+      updateTaskDom(t);
+    }, 90);
+  }
+
+  function convert(){
+    if(state.running) return;
+    if(!state.to){ toast("请先选择输出格式", "warn"); return; }
+    var queue = state.tasks.filter(function(t){ return t.status === "wait"; });
+    if(!queue.length){ toast("没有待转换的文件", "warn"); return; }
+    state.running = true;
+    render();
+    announce("开始转换，共 " + queue.length + " 个文件");
+    var i = 0;
+    function next(){
+      if(i >= queue.length){
+        state.running = false;
+        render();
+        var done = state.tasks.filter(function(t){ return t.status === "done"; }).length;
+        var fail = state.tasks.filter(function(t){ return t.status === "fail"; }).length;
+        var msg = fail && done ? "转换完成：成功 " + done + " 个，失败 " + fail + " 个"
+               : fail ? "转换结束：" + fail + " 个文件失败"
+               : "全部转换完成，共 " + done + " 个文件";
+        toast(msg, fail ? "warn" : "ok");
+        announce(msg);
+        return;
+      }
+      var t = queue[i++];
+      if(t.status !== "wait"){ next(); return; }
+      t.to = state.to;
+      t.status = "run";
+      render();
+      setTimeout(function(){ animateTask(t, next); }, 150);
+    }
+    next();
+  }
+
+  // ── wire up ──
+  $("x-file").addEventListener("change", function(e){
+    addFiles(e.target.files);
+    e.target.value = "";
+  });
+  var drop = $("x-drop");
+  ["dragenter", "dragover"].forEach(function(ev){
+    drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add("is-over"); });
+  });
+  drop.addEventListener("dragleave", function(e){
+    if(!drop.contains(e.relatedTarget)) drop.classList.remove("is-over");
+  });
+  drop.addEventListener("drop", function(e){
+    e.preventDefault();
+    drop.classList.remove("is-over");
+    if(e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+  });
+  $("x-sample").addEventListener("click", function(){ addFiles(SAMPLES); });
+
+  Array.prototype.forEach.call(root.querySelectorAll(".x-segbtn"), function(b){
+    b.addEventListener("click", function(){
+      state.to = b.getAttribute("data-to");
+      Array.prototype.forEach.call(root.querySelectorAll(".x-segbtn"), function(x){
+        x.setAttribute("aria-pressed", x === b ? "true" : "false");
+      });
+      state.tasks.forEach(function(t){ if(t.status === "wait") t.to = state.to; });
+      updateAction();
+      render();
+    });
+  });
+
+  $("x-go").addEventListener("click", convert);
+  $("x-clear").addEventListener("click", clearList);
+
+  // settings dialog
+  var setDlg = $("x-setdlg");
+  $("x-setbtn").addEventListener("click", function(){ setDlg.showModal(); });
+  $("x-setclose").addEventListener("click", function(){ setDlg.close(); });
+  $("x-setcancel").addEventListener("click", function(){ setDlg.close(); });
+  $("x-setsave").addEventListener("click", function(){
+    setDlg.close();
+    toast("设置已保存（演示数据，不持久化）", "ok");
+  });
+
+  // history dialog
+  var histDlg = $("x-histdlg");
+  function openHistory(){
+    var body = $("x-histbody");
+    body.textContent = "";
+    var rows = MOCK_HISTORY.slice();
+    var now = new Date();
+    var hh = function(x){ return (x < 10 ? "0" : "") + x; };
+    state.tasks.filter(function(t){ return t.status === "done"; }).forEach(function(t){
+      rows.unshift({ time: "今天 " + hh(now.getHours()) + ":" + hh(now.getMinutes()),
+        name: t.name, pair: t.from + " → " + (t.to || state.to || ""), st: "ok", note: "完成" });
+    });
+    rows.forEach(function(r){
+      var row = el("div", "x-hrow");
+      row.appendChild(el("span", "x-htime", r.time));
+      row.appendChild(el("span", "x-hname", r.name));
+      var p = el("span", "x-meta", r.pair);
+      row.appendChild(p);
+      var s = el("span", r.st === "ok" ? "x-hst-ok" : "x-hst-bad", r.note);
+      row.appendChild(s);
+      body.appendChild(row);
+    });
+    histDlg.showModal();
+  }
+  $("x-histbtn").addEventListener("click", openHistory);
+  $("x-histclose").addEventListener("click", function(){ histDlg.close(); });
+  $("x-histok").addEventListener("click", function(){ histDlg.close(); });
+
+  render();
+  icons();
+})();
+</script>
+</div>
+
+</div>
+</body>
+</html>
