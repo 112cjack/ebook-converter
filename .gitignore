@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+venv/
+*.pyc
+
+# Node
+node_modules/
+
+# Keil/IAR
+*.uvguix.*
+Objects/
+Listings/
+DebugConfig/
+
+# 通用
+Thumbs.db
+desktop.ini
