@@ -3,6 +3,11 @@ __pycache__/
 venv/
 *.pyc
 
+# PyInstaller 打包产物（build_exe.bat 生成）
+build/
+dist/
+*.spec
+
 # Node
 node_modules/
 
