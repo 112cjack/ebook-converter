@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>电子书转换器</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" class="x-sprite" aria-hidden="true">
+  <symbol id="i-book-open" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="i-alert-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="i-folder-open" viewBox="0 0 24 24"><path d="M6 14l1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></symbol>
+  <symbol id="i-rotate-ccw" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></symbol>
+</svg>
+
+<header class="x-top">
+  <div class="x-brand">
+    <span class="x-seal" aria-hidden="true">转</span>
+    <div>
+      <div class="x-title">电子书转换器</div>
+      <div class="x-sub">本地转换 · 文件不出电脑</div>
+    </div>
+  </div>
+  <div class="x-topright">
+    <span class="x-cal" id="x-cal" title=""><span class="x-dot" aria-hidden="true"></span><span id="x-caltext">正在检测 Calibre…</span></span>
+    <button class="x-btn" id="x-histbtn" type="button"><svg class="ic"><use href="#i-history"/></svg>历史</button>
+    <button class="x-btn" id="x-setbtn" type="button"><svg class="ic"><use href="#i-sliders"/></svg>设置</button>
+  </div>
+</header>
+
+<div class="x-guide" id="x-guide" hidden>
+  <span class="x-guidetext">未检测到 Calibre 转换引擎，暂时无法转换。</span>
+  <button class="x-btn" id="x-guidebtn" type="button">查看安装引导</button>
+</div>
+
+<main class="x-main">
+  <section class="x-drop" id="x-drop" aria-label="文件导入区">
+    <svg class="x-dropicon" aria-hidden="true"><use href="#i-book-open"/></svg>
+    <div class="x-droptitle">拖拽电子书文件到此处</div>
+    <div class="x-dropsub">或</div>
+    <div class="x-droprow">
+      <label class="x-btn" for="x-file">选择文件</label>
+      <input type="file" id="x-file" class="x-sr" multiple>
+      <span class="x-uploading" id="x-uploading" hidden>正在上传…</span>
+    </div>
+    <div class="x-fmts" id="x-fmts">正在加载支持的格式…</div>
+  </section>
+
+  <div class="x-listhead">
+    <span class="x-listtitle">转换列表<span id="x-count"></span></span>
+    <button class="x-linkbtn" id="x-clear" type="button">清空列表</button>
+  </div>
+  <div id="x-list"></div>
+  <div class="x-empty" id="x-empty">还没有文件。拖拽导入，或点击上面「选择文件」开始。</div>
+</main>
+
+<div class="x-action">
+  <div class="x-fmtgroup">
+    <span class="x-fmtlabel" id="x-fmtlabel">输出格式</span>
+    <div class="x-seg" id="x-seg" role="group" aria-labelledby="x-fmtlabel"></div>
+    <div class="x-helper" id="x-helper">请先选择输出格式</div>
+  </div>
+  <div class="x-run">
+    <div class="x-oprog" aria-hidden="true">
+      <div class="x-obar"><div class="x-ofill" id="x-ofill" style="width:0%"></div></div>
+      <span class="x-otext" id="x-otext">0/0</span>
+    </div>
+    <button class="x-btn" id="x-openout" type="button" hidden><svg class="ic"><use href="#i-folder-open"/></svg>打开输出文件夹</button>
+    <button class="x-primary" id="x-go" type="button" disabled>开始转换</button>
+  </div>
+</div>
+
+<div class="x-toasts" id="x-toasts"></div>
+<div class="x-sr" aria-live="polite" id="x-live"></div>
+
+<dialog id="x-setdlg" class="x-dlg" aria-labelledby="x-settitle">
+  <div class="x-dlghead">
+    <span class="x-dlgtitle" id="x-settitle">设置</span>
+    <button class="x-icobtn" id="x-setclose" type="button" aria-label="关闭设置"><svg class="ic"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="x-dlgbody">
+    <label class="x-field">输出目录
+      <input class="x-input mono" id="x-outdir" placeholder="转换结果保存的位置，留空使用程序目录下 converted">
+    </label>
+    <label class="x-field">Calibre 引擎路径（ebook-convert）
+      <input class="x-input mono" id="x-calpath" placeholder="留空自动探测；未安装 Calibre 时可手动指定">
+    </label>
+    <label class="x-field">单次上传上限（MB）
+      <input class="x-input" id="x-limit" type="number" min="1" max="4096" value="200">
+    </label>
+    <p class="x-hint">全部转换在本机完成，文件不会上传到任何服务器。</p>
+  </div>
+  <div class="x-dlgfoot">
+    <button class="x-btn" id="x-setcancel" type="button">取消</button>
+    <button class="x-primary x-btnsm" id="x-setsave" type="button">保存设置</button>
+  </div>
+</dialog>
+
+<dialog id="x-histdlg" class="x-dlg" aria-labelledby="x-histtitle">
+  <div class="x-dlghead">
+    <span class="x-dlgtitle" id="x-histtitle">转换历史（本次运行）</span>
+    <button class="x-icobtn" id="x-histclose" type="button" aria-label="关闭历史"><svg class="ic"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="x-dlgbody" id="x-histbody"></div>
+  <div class="x-dlgfoot">
+    <button class="x-btn" id="x-histok" type="button">关闭</button>
+  </div>
+</dialog>
+
+<dialog id="x-guidedlg" class="x-dlg" aria-labelledby="x-guidetitle">
+  <div class="x-dlghead">
+    <span class="x-dlgtitle" id="x-guidetitle">安装 Calibre 转换引擎</span>
+    <button class="x-icobtn" id="x-guideclose" type="button" aria-label="关闭引导"><svg class="ic"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="x-dlgbody">
+    <p class="x-hint">本工具使用开源软件 Calibre 自带的 ebook-convert 执行转换，请先安装 Calibre：</p>
+    <div class="x-cmdrow">
+      <code class="x-cmd" id="x-winget">winget install calibre.calibre</code>
+      <button class="x-btn x-btnsm" id="x-copywinget" type="button">复制</button>
+    </div>
+    <p class="x-hint">或到官网下载：<a href="https://calibre-ebook.com/download" target="_blank" rel="noopener noreferrer">calibre-ebook.com/download</a></p>
+    <p class="x-hint">安装完成后重启本程序即可自动检测；若 Calibre 安装在非默认位置，请在「设置」中手动指定 ebook-convert 路径。</p>
+  </div>
+  <div class="x-dlgfoot">
+    <button class="x-btn" id="x-guideset" type="button">去设置指定路径</button>
+    <button class="x-primary x-btnsm" id="x-guideok" type="button">我知道了</button>
+  </div>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,260 @@
+# -*- coding: utf-8 -*-
+"""任务队列与后台 worker。
+
+每个上传文件对应一个上传记录；每次提交转换为其创建一个任务，
+任务在内存字典中保存（即本次运行期间的转换历史，程序重启后清空）。
+单 worker 线程从 FIFO 队列逐个取任务，以子进程调用引擎层
+ebook_converter.convert_file，本模块只做调度、重名判定与状态管理。
+"""
+
+import queue
+import threading
+import time
+import uuid
+from pathlib import Path
+
+import ebook_converter as ec
+
+# 任务状态机：queued -> converting -> done / failed / skipped
+QUEUED = "queued"
+CONVERTING = "converting"
+DONE = "done"
+FAILED = "failed"
+SKIPPED = "skipped"
+
+STATUS_LABEL = {
+    QUEUED: "排队中",
+    CONVERTING: "转换中",
+    DONE: "已完成",
+    FAILED: "失败",
+    SKIPPED: "已跳过",
+}
+
+# 引擎层与系统层错误 -> 通俗文案（引擎原始报错保留在 error_detail 供排查）
+FRIENDLY_ERROR = "文件可能已损坏或受版权保护（DRM），暂不支持转换"
+
+
+def safe_filename(name):
+    """清洗上传文件名：去掉路径成分与 Windows 非法字符，保留中文。"""
+    name = Path(str(name).replace("\\", "/")).name
+    cleaned = "".join(ch for ch in name if ch.isprintable() and ch not in '<>:"|?*')
+    return cleaned.strip() or "未命名"
+
+
+class TaskManager:
+    """上传记录、转换任务与串行 worker 的唯一持有者。"""
+
+    def __init__(self, upload_dir, engine_resolver=None):
+        self.upload_dir = Path(upload_dir)
+        self.uploads = {}       # upload_id -> 上传记录
+        self.tasks = {}         # task_id -> 任务记录
+        self.upload_order = []  # 保持列表展示顺序
+        self.task_order = []
+        self.registered_dirs = set()  # open-folder 只接受这里登记过的目录
+        self._queue = queue.Queue()
+        self._seen_dst = {}     # 运行期内 dst -> 来源文件名，用于重名提示
+        self._lock = threading.Lock()
+        self.resolve_engine = engine_resolver or (lambda: ec.find_engine())
+        worker = threading.Thread(target=self._work_loop, daemon=True, name="convert-worker")
+        worker.start()
+        self._worker = worker
+
+    # ── 上传 ──
+
+    def store_upload(self, filename, data):
+        """保存上传文件到工作目录，返回上传记录。调用方已做扩展名白名单校验。"""
+        ext = Path(filename).suffix.lower()
+        self.upload_dir.mkdir(parents=True, exist_ok=True)
+        stored = uuid.uuid4().hex[:8] + "_" + safe_filename(filename)
+        (self.upload_dir / stored).write_bytes(data)
+        record = {
+            "id": uuid.uuid4().hex[:12],
+            "name": safe_filename(filename),
+            "stored_name": stored,
+            "size": len(data),
+            "format": ext.lstrip("."),
+            "removed": False,
+        }
+        with self._lock:
+            self.uploads[record["id"]] = record
+            self.upload_order.append(record["id"])
+        self.registered_dirs.add(str(self.upload_dir))
+        return record
+
+    def removable_upload_ids(self):
+        """可移除的上传：未被移除、且没有转换中的任务（排队中的允许移除）。"""
+        busy = {
+            t["upload_id"]
+            for t in self.tasks.values()
+            if t["status"] == CONVERTING
+        }
+        with self._lock:
+            return [
+                uid for uid in self.upload_order
+                if not self.uploads[uid]["removed"] and uid not in busy
+            ]
+
+    def remove_uploads(self, upload_ids):
+        """把上传标记为已移除（列表不再显示），删除临时文件；任务记录保留为历史。"""
+        with self._lock:
+            for uid in upload_ids:
+                record = self.uploads.get(uid)
+                if record is None or record["removed"]:
+                    continue
+                record["removed"] = True
+                # 若还有排队任务（并发窗口内），置为跳过，worker 不会再执行
+                for task in self.tasks.values():
+                    if task["upload_id"] == uid and task["status"] == QUEUED:
+                        task["status"] = SKIPPED
+                        task["message"] = "已从列表移除"
+            removed = [self.uploads[uid] for uid in upload_ids if uid in self.uploads]
+        for record in removed:
+            (self.upload_dir / record["stored_name"]).unlink(missing_ok=True)
+
+    def upload_path(self, record):
+        return self.upload_dir / record["stored_name"]
+
+    # ── 任务创建 ──
+
+    def create_tasks(self, upload_ids, target_format, output_dir):
+        """为一组上传创建转换任务（queued）并入队，返回任务列表。
+
+        target_format 必须在引擎层 OUTPUT_FORMATS 内；engine 未就绪时抛 EngineNotFoundError。
+        """
+        if target_format not in ec.OUTPUT_FORMATS:
+            raise ValueError(f"不支持的输出格式: {target_format}")
+        engine = self.resolve_engine()
+        if engine is None:
+            raise ec.EngineNotFoundError("未检测到 Calibre，请先安装或在设置中指定路径")
+
+        out_dir = Path(output_dir)
+        created = []
+        with self._lock:
+            for uid in upload_ids:
+                record = self.uploads.get(uid)
+                if record is None or record["removed"]:
+                    continue
+                task = {
+                    "id": uuid.uuid4().hex[:12],
+                    "upload_id": uid,
+                    "name": record["name"],
+                    "src_path": str(self.upload_path(record)),
+                    "format_in": record["format"],
+                    "format_out": target_format,
+                    "status": QUEUED,
+                    "progress": 0,
+                    "message": None,
+                    "error": None,
+                    "error_detail": None,
+                    "output_path": str(out_dir / (Path(record["name"]).stem + "." + target_format)),
+                    "output_dir": str(out_dir),
+                    "created_at": time.time(),
+                    "started_at": None,
+                    "finished_at": None,
+                }
+                self.tasks[task["id"]] = task
+                self.task_order.append(task["id"])
+                created.append(task)
+                self._queue.put(task["id"])
+        return created
+
+    # ── worker ──
+
+    def _work_loop(self):
+        while True:
+            task_id = self._queue.get()
+            try:
+                self._run_task(task_id)
+            except Exception as exc:  # worker 线程绝不退出，内部错误落到任务上
+                self._finish(task_id, FAILED, error=f"内部错误: {exc}")
+            finally:
+                self._queue.task_done()
+
+    def _run_task(self, task_id):
+        task = self.tasks.get(task_id)
+        if task is None or task["status"] != QUEUED:
+            return
+        task["status"] = CONVERTING
+        task["started_at"] = time.time()
+
+        dst = Path(task["output_path"])
+        prior = self._seen_dst.get(dst)
+        if prior is not None:
+            self._finish(task_id, SKIPPED, message=f"输出与 {prior} 重名")
+            return
+        self._seen_dst[dst] = task["name"]
+
+        warning = ""
+        if task["format_in"] == "pdf" and task["format_out"] != "pdf":
+            if ec.pdf_has_text_layer(task["src_path"]) is False:
+                warning = ec.SCANNED_PDF_WARNING
+
+        engine = self.resolve_engine()
+        if engine is None:
+            self._finish(task_id, FAILED, error="未检测到 Calibre，请先安装或在设置中指定路径")
+            return
+
+        try:
+            status, message = ec.convert_file(engine, task["src_path"], dst)
+        except OSError as exc:
+            self._finish(task_id, FAILED, error=f"无法启动转换引擎: {exc}")
+            return
+
+        if status == ec.STATUS_OK:
+            task["output_path"] = str(dst)
+            self._finish(task_id, DONE, message=f"{message}；{warning}" if warning else message)
+        elif status == ec.STATUS_SKIPPED:
+            self._finish(task_id, SKIPPED, message=message)
+        else:
+            # 引擎报错尾巴映射为通俗文案，原始信息保留在 error_detail（技术方案 5.3）
+            detail = self._engine_error_detail(message)
+            self._finish(
+                task_id, FAILED,
+                error=FRIENDLY_ERROR if detail else message,
+                error_detail=detail,
+            )
+
+    @staticmethod
+    def _engine_error_detail(message):
+        """引擎失败消息的尾巴（不含输出大小校验等已通俗的提示）。"""
+        if not message:
+            return None
+        return message
+
+    def _finish(self, task_id, status, message=None, error=None, error_detail=None):
+        task = self.tasks.get(task_id)
+        if task is None:
+            return
+        task["status"] = status
+        task["message"] = message
+        task["error"] = error
+        task["error_detail"] = error_detail
+        task["finished_at"] = time.time()
+
+    # ── 查询与同步 ──
+
+    def wait_idle(self, timeout=30):
+        """等待全部任务离开队列并完成（测试用）。"""
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            if (self._queue.unfinished_tasks == 0
+                    and all(t["status"] not in (QUEUED, CONVERTING) for t in self.tasks.values())):
+                return True
+            time.sleep(0.02)
+        return False
+
+    def latest_task_of(self, upload_id):
+        """某个上传最新的一次转换任务（列表行展示用）。"""
+        result = None
+        for tid in self.task_order:
+            task = self.tasks[tid]
+            if task["upload_id"] == upload_id:
+                result = task
+        return result
+
+    def snapshot(self):
+        """返回 uploads 与 tasks 的只读视图（按创建顺序）。"""
+        with self._lock:
+            uploads = [dict(self.uploads[uid]) for uid in self.upload_order if uid in self.uploads]
+            tasks = [dict(self.tasks[tid]) for tid in self.task_order if tid in self.tasks]
+        return uploads, tasks
