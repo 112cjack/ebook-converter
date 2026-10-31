@@ -18,7 +18,12 @@
   --x-accent:#D9A441; --x-accentbg:#C89138; --x-onaccent:#221C10;
   --x-moss:#93AF87; --x-clay:#D98B72; --x-track:#322C22;
   --x-drophover:#2A241C;
-  --x-texture: repeating-linear-gradient(0deg, rgba(234,224,203,.03) 0 1px, transparent 1px 4px);
+  --x-texture:
+    radial-gradient(120% 100% at 50% 0%, rgba(0,0,0,0) 52%, rgba(0,0,0,.4) 100%),
+    radial-gradient(60% 26% at 50% 0%, rgba(255,214,140,.08), transparent 72%),
+    repeating-linear-gradient(0deg, rgba(234,224,203,.05) 0 1px, transparent 1px 4px);
+  --x-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  --x-grain:.42;
   --x-serif: Georgia, "Songti SC", "SimSun", serif;
   --x-mono: Consolas, "Courier New", monospace;
   font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
@@ -32,9 +37,11 @@
   --x-moss:#2F6640; --x-clay:#A63A2B; --x-track:rgba(27,27,24,.1);
   --x-drophover:rgba(255,255,255,.85);
   --x-texture:
-    radial-gradient(60% 50% at 15% 8%, rgba(151,171,143,.22), transparent 62%),
-    radial-gradient(50% 45% at 88% 16%, rgba(196,181,158,.24), transparent 62%),
-    radial-gradient(70% 60% at 55% 96%, rgba(158,175,190,.2), transparent 65%);
+    radial-gradient(120% 100% at 50% 0%, rgba(0,0,0,0) 60%, rgba(84,94,84,.28) 100%),
+    radial-gradient(60% 50% at 15% 8%, rgba(151,171,143,.34), transparent 62%),
+    radial-gradient(50% 45% at 88% 16%, rgba(196,181,158,.36), transparent 62%),
+    radial-gradient(70% 60% at 55% 96%, rgba(158,175,190,.3), transparent 65%);
+  --x-grain:.34;
 }
 #ebook-converter-demo[data-theme="santi"]{
   color-scheme: dark;
@@ -44,14 +51,21 @@
   --x-moss:#7FB08E; --x-clay:#E08579; --x-track:#1D2536;
   --x-drophover:#16203A;
   --x-texture:
-    repeating-linear-gradient(0deg, rgba(215,223,239,.026) 0 1px, transparent 1px 3px),
-    radial-gradient(1px 1px at 18% 22%, rgba(215,223,239,.5) 50%, transparent 51%),
-    radial-gradient(1px 1px at 72% 10%, rgba(215,223,239,.4) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 86% 62%, rgba(214,84,74,.45) 50%, transparent 51%),
-    radial-gradient(1px 1px at 38% 80%, rgba(215,223,239,.32) 50%, transparent 51%),
-    radial-gradient(1px 1px at 58% 40%, rgba(215,223,239,.3) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 8% 56%, rgba(215,223,239,.3) 50%, transparent 51%),
-    radial-gradient(70% 45% at 80% -10%, rgba(214,84,74,.14), transparent 65%);
+    radial-gradient(120% 100% at 50% 0%, rgba(2,4,10,0) 55%, rgba(2,4,10,.6) 100%),
+    repeating-linear-gradient(0deg, rgba(215,223,239,.04) 0 1px, transparent 1px 56px),
+    repeating-linear-gradient(90deg, rgba(215,223,239,.04) 0 1px, transparent 1px 56px),
+    repeating-linear-gradient(0deg, rgba(215,223,239,.05) 0 1px, transparent 1px 4px),
+    radial-gradient(1.5px 1.5px at 18% 22%, rgba(215,223,239,.7) 50%, transparent 51%),
+    radial-gradient(1px 1px at 72% 10%, rgba(215,223,239,.55) 50%, transparent 51%),
+    radial-gradient(2px 2px at 86% 62%, rgba(214,84,74,.6) 50%, transparent 51%),
+    radial-gradient(1px 1px at 38% 80%, rgba(215,223,239,.45) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 58% 40%, rgba(215,223,239,.45) 50%, transparent 51%),
+    radial-gradient(2px 2px at 8% 56%, rgba(215,223,239,.4) 50%, transparent 51%),
+    radial-gradient(1px 1px at 30% 48%, rgba(215,223,239,.4) 50%, transparent 51%),
+    radial-gradient(1px 1px at 64% 86%, rgba(214,84,74,.4) 50%, transparent 51%),
+    radial-gradient(70% 45% at 82% -8%, rgba(214,84,74,.22), transparent 65%),
+    radial-gradient(60% 40% at 8% 108%, rgba(90,130,220,.16), transparent 65%);
+  --x-grain:.38;
 }
 #ebook-converter-demo *{ box-sizing: border-box; }
 #ebook-converter-demo .x-sr{
@@ -109,6 +123,15 @@
 }
 #ebook-converter-demo .x-seal svg{ width:19px; height:19px; display:block; }
 
+/* ── 材质颗粒层：SVG 噪点，软光混合，随主题调强度 ── */
+#ebook-converter-demo .x-grain{
+  position:absolute; inset:0; z-index:1; pointer-events:none;
+  background-image:var(--x-noise);
+  background-size:180px 180px;
+  opacity:var(--x-grain);
+  mix-blend-mode:soft-light;
+}
+
 /* ── Kindle · 悬浮毛玻璃 ── */
 #ebook-converter-demo[data-theme="kindle"] .x-frame{
   border-radius:18px; border-color:rgba(27,27,24,.1);
@@ -119,6 +142,7 @@
   -webkit-backdrop-filter:blur(14px) saturate(1.15);
 }
 #ebook-converter-demo[data-theme="kindle"] .x-row{ border-color:rgba(27,27,24,.1); }
+#ebook-converter-demo[data-theme="kindle"] :is(.x-top,.x-row,.x-drop,.x-action){ box-shadow: inset 0 1px 0 rgba(255,255,255,.8); }
 #ebook-converter-demo[data-theme="kindle"] .x-primary{ border-radius:10px; }
 
 /* ── 三体 · 双栏控制台（HUD）── */
@@ -193,7 +217,7 @@
   border: 1.5px dashed var(--x-line); border-radius: 12px;
   background: var(--x-dropbg);
   padding: 26px 16px 22px; text-align:center;
-  transition: border-color .2s ease-out, background .2s ease-out;
+  transition: border-color .2s ease-out;
 }
 #ebook-converter-demo .x-drop.is-over{ border-color: var(--x-accent); background: var(--x-drophover); }
 #ebook-converter-demo .x-dropicon{ width:30px; height:30px; color: var(--x-muted); }
@@ -361,6 +385,7 @@
 </style>
 
 <div class="x-frame">
+  <div class="x-grain" aria-hidden="true"></div>
   <header class="x-top">
     <div class="x-brand">
       <span class="x-seal" aria-hidden="true">
@@ -834,6 +859,12 @@
   function applyTheme(name){
     if(["night","kindle","santi"].indexOf(name) < 0) name = "night";
     root.setAttribute("data-theme", name);
+    // Chromium 在 color-scheme 切换后 backdrop-filter 层可能渲染陈旧，强制重绘一次
+    var frame = root.querySelector(".x-frame");
+    if(frame){
+      frame.style.opacity = "0.99";
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){ frame.style.opacity = ""; }); });
+    }
     Array.prototype.forEach.call(root.querySelectorAll(".x-theme"), function(b){
       b.classList.toggle("is-on", b.getAttribute("data-theme") === name);
     });
