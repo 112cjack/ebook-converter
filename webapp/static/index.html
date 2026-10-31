@@ -21,7 +21,20 @@
 
 <header class="x-top">
   <div class="x-brand">
-    <span class="x-seal" aria-hidden="true">转</span>
+    <span class="x-seal" aria-hidden="true">
+      <svg viewBox="0 0 64 64" fill="none">
+        <rect x="6" y="6" width="52" height="52" rx="5" class="x-sealbg"/>
+        <g stroke="currentColor" stroke-width="3.8" stroke-linecap="round" fill="none">
+          <path d="M16 18 Q21 20 21 26"/>
+          <path d="M14 34 Q19 36 19 42"/>
+          <path d="M40 13 v4"/>
+          <path d="M28 20 H52"/>
+          <path d="M28 20 V48"/>
+          <path d="M35 29 H51"/>
+          <path d="M35 43 Q42 48 50 42"/>
+        </g>
+      </svg>
+    </span>
     <div>
       <div class="x-title">电子书转换器</div>
       <div class="x-sub">本地转换 · 文件不出电脑</div>
@@ -40,6 +53,15 @@
 </div>
 
 <div class="x-connbar" id="x-connbar" hidden>无法连接本地服务，程序可能已关闭——请重新打开程序，再刷新本页面。</div>
+
+<div class="x-watchcard" id="x-watchcard" hidden>
+  <div class="x-watchhead">
+    <span class="x-watchtitle" id="x-watchtitle">监听中</span>
+    <span class="x-watchmeta" id="x-watchmeta"></span>
+    <button class="x-linkbtn" id="x-watchtoggle" type="button">查看不符文件</button>
+  </div>
+  <div class="x-watchlist" id="x-watchlist" hidden></div>
+</div>
 
 <main class="x-main">
   <section class="x-drop" id="x-drop" aria-label="文件导入区">
@@ -97,6 +119,17 @@
     <label class="x-field">单次上传上限（MB）
       <input class="x-input" id="x-limit" type="number" min="1" max="4096" value="200">
     </label>
+    <div class="x-field">文件夹监听（自动检查文件夹里的文件格式）
+      <label class="x-check"><input type="checkbox" id="x-watchon"> 启用监听</label>
+      <div class="x-watchrow">
+        <input class="x-input mono" id="x-watchfolder" placeholder="要监听的文件夹（留空不监听）">
+        <button class="x-btn x-btnsm" id="x-watchbrowse" type="button">浏览</button>
+      </div>
+      <label class="x-check">期望格式
+        <select class="x-input" id="x-watchformat"></select>
+      </label>
+      <p class="x-hint">文件夹里出现不是该格式的文件（或程序无法转换的文件）时提示你；重启后自动恢复。</p>
+    </div>
     <p class="x-hint">全部转换在本机完成，文件不会上传到任何服务器。</p>
     <button class="x-btn" id="x-mkshortcut" type="button" hidden>创建桌面快捷方式（方便下次找到程序）</button>
   </div>

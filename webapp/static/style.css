@@ -42,9 +42,10 @@ body{
 .x-seal{
   width: 34px; height: 34px; flex: none; border-radius: 7px;
   background: var(--x-sealbg); color: #fff;
-  font-family: var(--x-serif); font-size: 19px; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
 }
+.x-seal svg{ width: 22px; height: 22px; display: block; }
+.x-sealbg{ fill: var(--x-sealbg); }
 .x-title{ font-family: var(--x-serif); font-size: 17px; font-weight: 700; letter-spacing: .5px; }
 .x-sub{ font-size: 12px; color: var(--x-muted); }
 .x-topright{ display: flex; align-items: center; gap: 8px; flex: none; }
@@ -257,6 +258,32 @@ body{
 .x-browserow:last-child{ border-bottom: none; }
 .x-browserow:hover{ background: var(--x-dropbg); }
 .x-browseempty{ padding: 18px; text-align: center; color: var(--x-muted); font-size: 13px; }
+
+/* ── 文件夹监听状态卡 ── */
+.x-watchcard{
+  max-width: 1020px; margin: 16px auto 0; padding: 0;
+  background: var(--x-surface); border: 1px solid var(--x-line);
+  border-left: 3px solid var(--x-amber); border-radius: 10px;
+}
+.x-watchhead{
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 9px 14px; font-size: 13px;
+}
+.x-watchtitle{ font-weight: 700; }
+.x-watchmeta{ color: var(--x-muted); font-size: 12px; min-width: 0; overflow-wrap: anywhere; }
+.x-watchhead .x-linkbtn{ margin-left: auto; }
+.x-watchlist{
+  border-top: 1px solid var(--x-line); padding: 6px 14px 10px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.x-watchrow{
+  display: flex; align-items: center; gap: 8px; font-size: 12px;
+  color: var(--x-muted); min-width: 0;
+}
+.x-watchrow .x-name{ font-size: 12px; }
+.x-check{ display: flex; align-items: center; gap: 6px; font-weight: 400; font-size: 13px; }
+.x-watchrow2{ display: flex; gap: 8px; align-items: center; }
+.x-watchrow2 .x-input{ flex: 1; min-width: 0; }
 
 /* ── toasts ── */
 .x-toasts{

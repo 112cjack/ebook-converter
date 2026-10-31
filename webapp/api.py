@@ -209,7 +209,12 @@ def list_tasks():
 
 @bp.get("/api/watch")
 def get_watch():
-    """文件夹监听的规则与巡检状态（违规列表、本轮新增标记）。"""
+    """文件夹监听的规则与巡检状态（违规列表、本轮新增标记）。
+
+    每次查询同步执行一轮巡检（单层目录扫描毫秒级），保证页面轮询拿到实时结果；
+    后台线程仅按间隔兜底维持 fresh 提示语义。
+    """
+    _config, _state = _watcher().scan_once()
     return jsonify(_watcher().snapshot())
 
 

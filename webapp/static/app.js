@@ -32,6 +32,12 @@
     outputDir: null,   // 用户在目录浏览器中显式选定，优先于 lastOutputDir
     guideShown: false,
     uploading: false,
+    frozen: false,
+    settings: {},
+    watch: null,          // GET /api/watch 快照
+    watchTimer: null,
+    watchOpen: false,     // 状态卡违规列表展开状态
+    browseTarget: "output", // 目录浏览器当前服务的目标：output | watch
   };
 
   // ── 基础工具 ──
@@ -123,6 +129,12 @@
           $("x-guidedlg").showModal();
         }
       }
+    }).catch(function (err) {
+      // 状态获取失败时置回"检测中"，不留过期画面（避免与轮询侧显示矛盾）
+      state.engine = null;
+      state._announcedEngine = false;
+      renderEngineBadge();
+      throw err;
     });
   }
 
@@ -130,6 +142,11 @@
     return api("/api/tasks").then(function (body) {
       state.uploads = body.uploads || [];
       state.tasks = body.tasks || [];
+      // 引擎状态随轮询持续同步：保证胶囊/引导条/提示行三者永远一致
+      if (body.engine) {
+        state.engine = body.engine;
+        renderEngineBadge();
+      }
       var busy = state.tasks.some(function (t) {
         return t.status === "queued" || t.status === "converting";
       });
@@ -393,7 +410,8 @@
       b.disabled = state.uploading;
     });
     var helper = $("x-helper");
-    if (!engineReady()) helper.textContent = "未检测到转换引擎，暂时无法转换";
+    if (!state.engine) helper.textContent = "正在检测引擎…";
+    else if (!engineReady()) helper.textContent = "未检测到转换引擎，暂时无法转换";
     else if (!state.to) helper.textContent = "请先选择输出格式";
     else if (waiting) helper.textContent = "输出为 " + fmtLabel(state.to) + " · 待转换 " + waiting + " 个文件";
     else helper.textContent = "输出为 " + fmtLabel(state.to) + " · 没有待转换文件";
@@ -429,8 +447,11 @@
   var browseCurrent = null;
   var browseParent = null;
 
-  function openBrowse() {
-    browseCurrent = state.outputDir || state.lastOutputDir || null;
+  function openBrowse(target) {
+    state.browseTarget = target || "output";
+    browseCurrent = state.browseTarget === "watch"
+      ? $("x-watchfolder").value.trim() || null
+      : (state.outputDir || state.lastOutputDir || null);
     browseParent = null;
     $("x-browsedlg").showModal();
     loadBrowse(browseCurrent);
@@ -464,11 +485,96 @@
 
   function chooseBrowse() {
     if (browseCurrent) {
-      state.outputDir = browseCurrent;
-      renderOutdirHint();
-      toast("输出目录已选定：" + browseCurrent, "ok");
+      if (state.browseTarget === "watch") {
+        $("x-watchfolder").value = browseCurrent;
+      } else {
+        state.outputDir = browseCurrent;
+        renderOutdirHint();
+        toast("输出目录已选定：" + browseCurrent, "ok");
+      }
     }
     $("x-browsedlg").close();
+  }
+
+  // ── 文件夹监听（F8）──
+
+  var KIND_LABEL = { unconvertible: "无法转换", wrong_format: "格式不符" };
+
+  function loadWatch() {
+    return api("/api/watch").then(function (body) {
+      state.watch = body;
+      renderWatch(body);
+      if (body.enabled && !state.watchTimer) {
+        state.watchTimer = setTimeout(loadWatch, 5000);
+      }
+    }).catch(function (err) {
+      if (!err.network) toast(err.message, "warn");
+      state.watchTimer = setTimeout(loadWatch, 8000);
+    });
+  }
+
+  function scheduleWatchPoll() {
+    if (state.watchTimer) clearTimeout(state.watchTimer);
+    state.watchTimer = null;
+    if (state.watch && state.watch.enabled) {
+      state.watchTimer = setTimeout(loadWatch, 5000);
+    }
+  }
+
+  function renderWatch(w) {
+    var card = $("x-watchcard");
+    if (!w || !w.enabled) {
+      card.hidden = true;
+      return;
+    }
+    card.hidden = false;
+    var meta;
+    if (w.reachable === false) {
+      meta = "文件夹暂时不可达：" + w.folder;
+    } else {
+      var n = (w.violations || []).length;
+      meta = w.folder + " · 期望 " + fmtLabel(w.format) +
+        (n ? " · " + n + " 个不符文件" : " · 格式全部符合");
+    }
+    $("x-watchmeta").textContent = meta;
+    $("x-watchtitle").textContent = "监听中";
+    var list = $("x-watchlist");
+    var violations = w.violations || [];
+    if (violations.length && w.fresh && w.fresh.length) {
+      toast("监听发现 " + w.fresh.length + " 个不符文件，请查看监听卡", "warn");
+    }
+    list.textContent = "";
+    if (!violations.length) {
+      list.appendChild(el("div", "x-watchrow", "当前没有不符合要求的文件。"));
+    }
+    violations.forEach(function (v) {
+      var row = el("div", "x-watchrow");
+      var flag = el("span", "x-flagwarn", KIND_LABEL[v.kind] || v.kind);
+      row.appendChild(flag);
+      row.appendChild(el("span", "x-name", v.name));
+      row.appendChild(el("span", "", v.path));
+      list.appendChild(row);
+    });
+    list.hidden = !state.watchOpen;
+    $("x-watchtoggle").textContent = state.watchOpen ? "收起" : "查看不符文件";
+  }
+
+  function saveWatchFromSettings() {
+    var body = {
+      enabled: $("x-watchon").checked,
+      folder: $("x-watchfolder").value.trim(),
+      format: $("x-watchformat").value,
+    };
+    return api("/api/watch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(function (w) {
+      state.watch = w;
+      renderWatch(w);
+      scheduleWatchPoll();
+      if (w.enabled) toast("文件夹监听已启用", "ok");
+    });
   }
 
   // ── 动作 ──
@@ -590,14 +696,37 @@
   // ── 对话框 ──
 
   function openSettings() {
+    var watchReady = api("/api/watch").then(function (w) {
+      state.watch = w;
+      $("x-watchon").checked = !!w.enabled;
+      $("x-watchfolder").value = w.folder || "";
+      renderWatchFormatOptions(w.format);
+      scheduleWatchPoll();
+      return w;
+    }).catch(function (err) {
+      if (!err.network) toast(err.message, "warn");
+    });
     api("/api/settings").then(function (body) {
       $("x-outdir").value = body.output_dir || "";
       $("x-calpath").value = body.engine_path || "";
       $("x-limit").value = body.upload_limit_mb || 200;
       // 仅打包版（exe）显示桌面快捷方式入口；脚本版用 start.bat
       $("x-mkshortcut").hidden = !state.frozen;
+      return watchReady;
+    }).then(function () {
       $("x-setdlg").showModal();
     }).catch(function (err) { if (!err.network) toast(err.message, "warn"); });
+  }
+
+  function renderWatchFormatOptions(selected) {
+    var select = $("x-watchformat");
+    select.textContent = "";
+    state.outputFormats.forEach(function (fmt) {
+      var opt = el("option", "", fmtLabel(fmt));
+      opt.value = fmt;
+      if (fmt === selected) opt.selected = true;
+      select.appendChild(opt);
+    });
   }
 
   function saveSettings() {
@@ -610,11 +739,17 @@
         upload_limit_mb: parseInt($("x-limit").value, 10),
       }),
     }).then(function () {
-      $("x-setdlg").close();
       toast("设置已保存", "ok");
       state.engine = null;  // 引擎路径可能变化，重新检测
+      return saveWatchFromSettings().catch(function (err) {
+        if (!err.network) toast(err.message, "warn");
+      });
+    }).then(function () {
+      $("x-setdlg").close();
       return loadStatus();
-    }).catch(function (err) { toast(err.message, "warn"); });
+    }).catch(function (err) {
+      if (!err.network) toast(err.message, "warn");
+    });
   }
 
   function openHistory() {
@@ -671,7 +806,12 @@
   $("x-go").addEventListener("click", startConvert);
   $("x-clear").addEventListener("click", clearList);
   $("x-openout").addEventListener("click", function () { openFolder(state.outputDir || state.lastOutputDir); });
-  $("x-browsebtn").addEventListener("click", openBrowse);
+  $("x-browsebtn").addEventListener("click", function () { openBrowse("output"); });
+  $("x-watchbrowse").addEventListener("click", function () { openBrowse("watch"); });
+  $("x-watchtoggle").addEventListener("click", function () {
+    state.watchOpen = !state.watchOpen;
+    if (state.watch) renderWatch(state.watch);
+  });
   $("x-browseup").addEventListener("click", function () { if (browseParent) loadBrowse(browseParent); });
   $("x-browseclose").addEventListener("click", function () { $("x-browsedlg").close(); });
   $("x-browsecancel").addEventListener("click", function () { $("x-browsedlg").close(); });
@@ -765,4 +905,5 @@
 
   // ── 启动 ──
   loadStatus().then(refreshTasks, refreshTasks);
+  loadWatch();
 })();
