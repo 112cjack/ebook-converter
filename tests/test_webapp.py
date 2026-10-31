@@ -595,6 +595,48 @@ class TestBrowse:
             "/api/browse", query_string={"path": "Z:/__no_such__"}).status_code == 400
 
 
+# ── 便携版引擎探测 ──
+
+
+class TestPortableEngine:
+    def _rebuild(self, app_env, tmp_path):
+        """以 tmp_path 为基目录重建 resolver（模拟 base_dir 指向程序目录）。"""
+        app_env.extensions["base_dir"] = tmp_path
+        mgr = app_env.extensions["task_manager"]
+        mgr.resolve_engine = __import__("webapp", fromlist=["make_engine_resolver"]) \
+            .make_engine_resolver(app_env.extensions["settings_data"], tmp_path)
+
+    def test_portable_engine_direct(self, app_env, tmp_path):
+        exe_dir = tmp_path / "engines" / "calibre"
+        exe_dir.mkdir(parents=True)
+        (exe_dir / "ebook-convert.exe").write_text("")
+        self._rebuild(app_env, tmp_path)
+        state = app_env.test_client().get("/api/status").get_json()
+        assert state["engine"]["installed"] is True
+        assert state["engine"]["source"] == "auto"
+        assert "engines" in state["engine"]["path"]
+
+    def test_portable_engine_one_level_down(self, app_env, tmp_path):
+        exe_dir = tmp_path / "engines" / "calibre" / "Calibre2"
+        exe_dir.mkdir(parents=True)
+        (exe_dir / "ebook-convert.exe").write_text("")
+        self._rebuild(app_env, tmp_path)
+        assert app_env.test_client().get("/api/status").get_json()["engine"]["installed"] is True
+
+    def test_manual_path_wins_when_no_portable(self, app_env, tmp_path):
+        fake = tmp_path / "ebook-convert.exe"
+        fake.write_text("")
+        app_env.extensions["settings_data"]["engine_path"] = str(fake)
+        self._rebuild(app_env, tmp_path)
+        state = app_env.test_client().get("/api/status").get_json()
+        assert state["engine"]["source"] == "manual"
+
+    def test_status_carries_install_state(self, client):
+        body = client.get("/api/status").get_json()
+        assert body["engine"]["install"]["state"] == "idle"
+        assert body["engine"]["install"]["active"] is False
+
+
 # ── 状态与页面 ──
 
 

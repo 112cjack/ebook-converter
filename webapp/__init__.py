@@ -21,9 +21,27 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger("ebook-converter")
 
 
-def make_engine_resolver(settings_data):
-    """引擎解析：设置中手动指定的路径优先，其次自动探测（技术方案 3.2）。"""
+def find_portable_engine(base):
+    """程序目录下的便携版引擎：engines/calibre 及其一级子目录（兼容官方解压结构）。"""
+    root = Path(base) / "engines" / "calibre"
+    if not root.is_dir():
+        return None
+    direct = root / ec.CALIBRE_EXE
+    if direct.is_file():
+        return direct
+    for child in sorted(root.iterdir()):
+        candidate = child / ec.CALIBRE_EXE
+        if child.is_dir() and candidate.is_file():
+            return candidate
+    return None
+
+
+def make_engine_resolver(settings_data, base):
+    """引擎解析优先级：程序目录便携版 > 设置中手动指定 > 自动探测（技术方案补记）。"""
     def resolve():
+        portable = find_portable_engine(base)
+        if portable is not None:
+            return portable
         manual = str(settings_data.get("engine_path") or "").strip()
         if manual:
             path = Path(manual)
@@ -50,7 +68,7 @@ def create_app(base_dir=None, testing=False):
     app.extensions["base_dir"] = base
     app.extensions["engine_versions"] = {}
 
-    manager = TaskManager(upload_dir, engine_resolver=make_engine_resolver(settings_data))
+    manager = TaskManager(upload_dir, engine_resolver=make_engine_resolver(settings_data, base))
     app.extensions["task_manager"] = manager
     if settings_data.get("output_dir"):
         manager.registered_dirs.add(str(Path(settings_data["output_dir"])))
@@ -81,4 +99,6 @@ def create_app(base_dir=None, testing=False):
 
     if not testing:
         atexit.register(cleanup_uploads)  # 程序退出时清空上传目录（技术方案 4.4）
+    log.info("Web 服务就绪：基目录 %s，引擎已检测=%s", base,
+             manager.resolve_engine() is not None)
     return app

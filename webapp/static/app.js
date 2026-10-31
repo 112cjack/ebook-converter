@@ -683,6 +683,64 @@
   $("x-histclose").addEventListener("click", function () { $("x-histdlg").close(); });
   $("x-histok").addEventListener("click", function () { $("x-histdlg").close(); });
 
+  // ── 引擎安装引导 ──
+
+  var installTimer = null;
+
+  function setInstallButtons(disabled) {
+    $("x-installportable").disabled = disabled;
+    $("x-installwinget").disabled = disabled;
+  }
+
+  function renderInstallState(install) {
+    var box = $("x-installstate");
+    if (!install || (!install.active && install.state === "idle")) {
+      box.hidden = true;
+      return;
+    }
+    box.hidden = false;
+    $("x-installfill").style.width = (install.progress || 0) + "%";
+    $("x-installmsg").textContent = install.message || "";
+    $("x-installmsg").style.color = install.state === "failed" ? "var(--x-clay)"
+      : install.state === "done" ? "var(--x-moss)" : "";
+  }
+
+  function pollInstall() {
+    if (installTimer) clearTimeout(installTimer);
+    api("/api/status").then(function (body) {
+      state.engine = body.engine;
+      renderEngineBadge();
+      renderInstallState(body.engine.install);
+      var install = body.engine.install || {};
+      if (!install.active) {
+        setInstallButtons(false);
+        if (install.state === "done") {
+          toast("引擎已安装，检测更新中…", "ok");
+          renderInstallState({ active: false, state: "idle", progress: 0, message: "" });
+          return loadStatus();
+        }
+        return;  // failed：状态留在对话框上，按钮已恢复可重试
+      }
+      installTimer = setTimeout(pollInstall, 1000);
+    }).catch(function () {
+      installTimer = setTimeout(pollInstall, 2000);
+    });
+  }
+
+  function installEngine(mode) {
+    api("/api/install-engine", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: mode }),
+    }).then(function () {
+      setInstallButtons(true);
+      renderInstallState({ active: true, state: "downloading", progress: 0, message: "正在启动安装…" });
+      pollInstall();
+    }).catch(function (err) {
+      if (!err.network) toast(err.message, "warn");
+    });
+  }
+
   $("x-guidebtn").addEventListener("click", function () { $("x-guidedlg").showModal(); });
   $("x-guideclose").addEventListener("click", function () { $("x-guidedlg").close(); });
   $("x-guideok").addEventListener("click", function () { $("x-guidedlg").close(); });
@@ -690,14 +748,12 @@
     $("x-guidedlg").close();
     openSettings();
   });
-  $("x-copywinget").addEventListener("click", function () {
-    var text = $("x-winget").textContent;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(
-        function () { toast("已复制安装命令", "ok"); },
-        function () { toast("复制失败，请手动选择命令复制", "warn"); });
-    }
+  $("x-guideredetect").addEventListener("click", function () {
+    state._announcedEngine = false;
+    loadStatus();
   });
+  $("x-installportable").addEventListener("click", function () { installEngine("portable"); });
+  $("x-installwinget").addEventListener("click", function () { installEngine("winget"); });
 
   // ── 启动 ──
   loadStatus().then(refreshTasks, refreshTasks);

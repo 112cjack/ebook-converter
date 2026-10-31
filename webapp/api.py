@@ -8,6 +8,7 @@
 
 import logging
 import os
+import shutil
 import string
 import subprocess
 import sys
@@ -17,6 +18,7 @@ from pathlib import Path
 from flask import Blueprint, current_app, jsonify, request
 
 import ebook_converter as ec
+from . import installer
 from . import settings as settings_mod
 from . import tasks as tasks_mod
 
@@ -43,6 +45,7 @@ def engine_state():
         "path": str(engine) if engine else None,
         "source": None,
         "version": None,
+        "install": installer.install_state(),
     }
     if engine is not None:
         state["source"] = "manual" if manual and _same_file(manual, engine) else "auto"
@@ -209,6 +212,22 @@ def cancel_task():
     if not task_id or not _manager().request_cancel(task_id):
         return jsonify({"error": "任务不存在或不在转换中"}), 400
     return jsonify({"ok": True})
+
+
+@bp.post("/api/install-engine")
+def install_engine():
+    """后台安装转换引擎：便携版下载解压到程序目录（默认）或 winget 安装标准版。"""
+    body = request.get_json(silent=True) or {}
+    mode = str(body.get("mode") or "portable")
+    if mode not in ("portable", "winget"):
+        return jsonify({"error": "未知的安装方式"}), 400
+    if mode == "winget" and shutil.which("winget") is None:
+        return jsonify({"error": "本机没有 winget，请下载便携版引擎或到官网手动安装"}), 400
+    started = installer.EngineInstaller(current_app.extensions["base_dir"]).start(mode)
+    if not started:
+        return jsonify({"error": "已有安装任务在进行中"}), 409
+    log.info("开始安装引擎（%s）", mode)
+    return jsonify({"ok": True, "install": installer.install_state()}), 202
 
 
 def list_drives():

@@ -140,17 +140,22 @@
     <button class="x-icobtn" id="x-guideclose" type="button" aria-label="关闭引导"><svg class="ic"><use href="#i-x"/></svg></button>
   </div>
   <div class="x-dlgbody">
-    <p class="x-hint">本工具使用开源软件 Calibre 自带的 ebook-convert 执行转换，请先安装 Calibre：</p>
-    <div class="x-cmdrow">
-      <code class="x-cmd" id="x-winget">winget install calibre.calibre</code>
-      <button class="x-btn x-btnsm" id="x-copywinget" type="button">复制</button>
+    <p class="x-hint">本工具使用开源软件 Calibre 自带的 ebook-convert 执行转换，请先获取引擎：</p>
+    <div class="x-guideactions">
+      <button class="x-primary x-btnsm" id="x-installportable" type="button">下载便携版引擎到程序目录（推荐）</button>
+      <button class="x-btn x-btnsm" id="x-installwinget" type="button">用 winget 安装标准版</button>
     </div>
-    <p class="x-hint">或到官网下载：<a href="https://calibre-ebook.com/download" target="_blank" rel="noopener noreferrer">calibre-ebook.com/download</a></p>
-    <p class="x-hint">安装完成后重启本程序即可自动检测；若 Calibre 安装在非默认位置，请在「设置」中手动指定 ebook-convert 路径。</p>
+    <div class="x-installstate" id="x-installstate" hidden>
+      <div class="x-pbar"><div class="x-pfill" id="x-installfill" style="width:0%"></div></div>
+      <span class="x-reason" id="x-installmsg"></span>
+    </div>
+    <p class="x-hint">便携版不写系统目录，引擎随本程序文件夹存放；也可到官网下载：<a href="https://calibre-ebook.com/download" target="_blank" rel="noopener noreferrer">calibre-ebook.com/download</a></p>
+    <p class="x-hint">安装完成后点「重新检测」；若装在非默认位置，请在「设置」中手动指定 ebook-convert 路径。</p>
   </div>
   <div class="x-dlgfoot">
     <button class="x-btn" id="x-guideset" type="button">去设置指定路径</button>
-    <button class="x-primary x-btnsm" id="x-guideok" type="button">我知道了</button>
+    <button class="x-btn" id="x-guideredetect" type="button">重新检测</button>
+    <button class="x-primary x-btnsm" id="x-guideok" type="button">关闭</button>
   </div>
 </dialog>
 

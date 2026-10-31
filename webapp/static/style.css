@@ -296,6 +296,10 @@ body{
   padding: 8px 10px; min-height: 36px;
 }
 .x-input.mono{ font-family: var(--x-mono); font-size: 12px; }
+.x-guideactions{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.x-installstate{ display: flex; align-items: center; gap: 10px; }
+.x-installstate .x-pbar{ flex: 1; min-width: 120px; height: 6px; border-radius: 999px;
+  background: light-dark(#ECE8DE, #33373D); overflow: hidden; }
 .x-hint{ margin: 0; font-size: 12px; color: var(--x-muted); font-weight: 400; overflow-wrap: anywhere; }
 .x-cmdrow{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .x-cmd{
