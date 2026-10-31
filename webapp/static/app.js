@@ -107,6 +107,7 @@
       state.outputFormats = body.output_formats || [];
       state.inputExtensions = body.input_extensions || [];
       state.settings = body.settings || {};
+      state.frozen = !!body.frozen;
       renderEngineBadge();
       renderFormatButtons();
       renderAcceptHint();
@@ -593,8 +594,10 @@
       $("x-outdir").value = body.output_dir || "";
       $("x-calpath").value = body.engine_path || "";
       $("x-limit").value = body.upload_limit_mb || 200;
+      // 仅打包版（exe）显示桌面快捷方式入口；脚本版用 start.bat
+      $("x-mkshortcut").hidden = !state.frozen;
       $("x-setdlg").showModal();
-    }).catch(function (err) { toast(err.message, "warn"); });
+    }).catch(function (err) { if (!err.network) toast(err.message, "warn"); });
   }
 
   function saveSettings() {
@@ -678,6 +681,11 @@
   $("x-setclose").addEventListener("click", function () { $("x-setdlg").close(); });
   $("x-setcancel").addEventListener("click", function () { $("x-setdlg").close(); });
   $("x-setsave").addEventListener("click", saveSettings);
+  $("x-mkshortcut").addEventListener("click", function () {
+    api("/api/create-shortcut", { method: "POST" }).then(function () {
+      toast("已在桌面创建快捷方式", "ok");
+    }).catch(function (err) { if (!err.network) toast(err.message, "warn"); });
+  });
 
   $("x-histbtn").addEventListener("click", openHistory);
   $("x-histclose").addEventListener("click", function () { $("x-histdlg").close(); });

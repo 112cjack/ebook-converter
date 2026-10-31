@@ -7,6 +7,7 @@
 
 import io
 import json
+import sys
 import time
 from pathlib import Path
 
@@ -635,6 +636,42 @@ class TestPortableEngine:
         body = client.get("/api/status").get_json()
         assert body["engine"]["install"]["state"] == "idle"
         assert body["engine"]["install"]["active"] is False
+
+
+# ── 桌面快捷方式 ──
+
+
+class TestShortcut:
+    def test_rejected_when_not_frozen(self, client):
+        resp = client.post("/api/create-shortcut")
+        assert resp.status_code == 400
+        assert "打包版" in resp.get_json()["error"]
+
+    def test_frozen_invokes_powershell_with_desktop_path(self, app_env, monkeypatch):
+        calls = []
+        monkeypatch.setattr(sys, "frozen", True, raising=False)
+        monkeypatch.setattr(sys, "executable", r"D:\Dist\电子书转换器.exe")
+        monkeypatch.setattr(
+            "webapp.api.subprocess.run",
+            lambda cmd, **k: calls.append(cmd)
+            or __import__("subprocess").CompletedProcess(cmd, 0),
+        )
+        resp = app_env.test_client().post("/api/create-shortcut")
+        assert resp.status_code == 200
+        cmd = calls[0]
+        assert "powershell" in str(cmd[0]).lower()
+        assert "GetFolderPath('Desktop')" in cmd[-1]
+        assert "电子书转换器.lnk" in cmd[-1]
+
+    def test_powershell_failure_maps_to_error(self, app_env, monkeypatch):
+        monkeypatch.setattr(sys, "frozen", True, raising=False)
+        monkeypatch.setattr(sys, "executable", r"D:\Dist\电子书转换器.exe")
+        monkeypatch.setattr(
+            "webapp.api.subprocess.run",
+            lambda cmd, **k: __import__("subprocess").CompletedProcess(cmd, 1),
+        )
+        resp = app_env.test_client().post("/api/create-shortcut")
+        assert resp.status_code == 500
 
 
 # ── 状态与页面 ──

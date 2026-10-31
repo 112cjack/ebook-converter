@@ -7,7 +7,7 @@ rem 依赖：pip install pyinstaller
 rem ============================================================
 cd /d "%~dp0"
 
-python -m PyInstaller --onefile --name "ebook-converter" ^
+python -m PyInstaller --onefile --name "电子书转换器" ^
   --add-data "webapp\static;webapp\static" ^
   --hidden-import "webapp.tasks" ^
   --noconfirm ^
@@ -18,5 +18,5 @@ if errorlevel 1 (
   pause
   goto :eof
 )
-echo 打包完成：dist\ebook-converter.exe
+echo 打包完成：dist\电子书转换器.exe
 pause

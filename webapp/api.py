@@ -128,6 +128,7 @@ def get_status():
         "output_formats": list(ec.OUTPUT_FORMATS),
         "input_extensions": sorted(ec.INPUT_EXTENSIONS),
         "settings": public_settings(data),
+        "frozen": bool(getattr(sys, "frozen", False)),
     })
 
 
@@ -228,6 +229,34 @@ def install_engine():
         return jsonify({"error": "已有安装任务在进行中"}), 409
     log.info("开始安装引擎（%s）", mode)
     return jsonify({"ok": True, "install": installer.install_state()}), 202
+
+
+@bp.post("/api/create-shortcut")
+def create_shortcut():
+    """在用户桌面创建指向本程序的快捷方式（仅打包版有意义）。"""
+    if not getattr(sys, "frozen", False):
+        return jsonify({"error": "仅打包版支持创建桌面快捷方式，脚本版请使用 start.bat"}), 400
+    target = Path(sys.executable)
+    quote = chr(39)
+    ps = (
+        "$ws = New-Object -ComObject WScript.Shell; "
+        "$lnk = [IO.Path]::Combine([Environment]::GetFolderPath('Desktop'), "
+        f"'电子书转换器.lnk'); "
+        "$s = $ws.CreateShortcut($lnk); "
+        f"$s.TargetPath = '{str(target).replace(quote, quote * 2)}'; "
+        f"$s.WorkingDirectory = '{str(target.parent).replace(quote, quote * 2)}'; "
+        "$s.Save()"
+    )
+    try:
+        proc = subprocess.run(["powershell", "-NoProfile", "-Command", ps],
+                              capture_output=True, text=True, timeout=30,
+                              encoding="utf-8", errors="replace")
+    except OSError as exc:
+        return jsonify({"error": f"创建快捷方式失败: {exc}"}), 500
+    if proc.returncode != 0:
+        return jsonify({"error": "创建快捷方式失败: " + (proc.stderr or "").strip()[-200:]}), 500
+    log.info("已创建桌面快捷方式 -> %s", target)
+    return jsonify({"ok": True})
 
 
 def list_drives():
