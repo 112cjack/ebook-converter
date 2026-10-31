@@ -19,7 +19,15 @@ DEFAULTS = {
     "output_dir": "",
     "engine_path": "",
     "upload_limit_mb": DEFAULT_UPLOAD_LIMIT_MB,
+    # 文件夹监听（F8）：期望文件夹内文件全部为某格式
+    "watch_enabled": False,
+    "watch_folder": "",
+    "watch_format": "epub",
+    "watch_interval": 5,
 }
+
+# 布尔字段读取时强转，避免 JSON 手改出非布尔值
+BOOL_FIELDS = ("watch_enabled",)
 
 
 def base_dir():
@@ -54,6 +62,8 @@ def load(base_dir=None):
             if isinstance(raw, dict) and raw.get(key) is not None:
                 data[key] = raw[key]
     data["upload_limit_mb"] = clamp_upload_limit(data["upload_limit_mb"])
+    for key in BOOL_FIELDS:
+        data[key] = bool(data[key])
     return data
 
 
@@ -61,6 +71,7 @@ def save(data, base_dir=None):
     """把设置写入 JSON 文件（UTF-8，无 BOM）。"""
     payload = {key: data.get(key, DEFAULTS[key]) for key in DEFAULTS}
     payload["upload_limit_mb"] = clamp_upload_limit(payload["upload_limit_mb"])
+    payload["watch_enabled"] = bool(payload["watch_enabled"])
     settings_path(base_dir).write_text(
         json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
     )

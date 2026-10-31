@@ -21,6 +21,7 @@ import ebook_converter as ec
 from . import installer
 from . import settings as settings_mod
 from . import tasks as tasks_mod
+from . import watcher as watcher_mod
 
 bp = Blueprint("api", __name__)
 
@@ -196,13 +197,61 @@ def convert():
 
 @bp.get("/api/tasks")
 def list_tasks():
-    """返回全部任务（含历史）当前状态，前端轮询此接口。"""
+    """返回全部任务（含历史）当前状态与引擎检测结论，前端轮询此接口。"""
     uploads, tasks = _manager().snapshot()
     return jsonify({
         "uploads": [public_upload(u) for u in uploads],
         "tasks": [public_task(t) for t in tasks],
+        "engine": engine_state(),
         "now": time.time(),
     })
+
+
+@bp.get("/api/watch")
+def get_watch():
+    """文件夹监听的规则与巡检状态（违规列表、本轮新增标记）。"""
+    return jsonify(_watcher().snapshot())
+
+
+@bp.post("/api/watch")
+def post_watch():
+    """启用/停用/修改文件夹监听规则并持久化（重启后自动恢复监听）。"""
+    body = request.get_json(silent=True) or {}
+    data = _settings_data()
+
+    if "enabled" in body:
+        data["watch_enabled"] = bool(body["enabled"])
+    if "folder" in body:
+        value = str(body["folder"] or "").strip()
+        if value and not Path(value).is_absolute():
+            return jsonify({"error": "监听文件夹必须是绝对路径"}), 400
+        data["watch_folder"] = value
+    if "format" in body:
+        value = str(body["format"] or "").strip().lower()
+        if value not in ec.OUTPUT_FORMATS:
+            return jsonify({"error": "期望格式不在支持列表内"}), 400
+        data["watch_format"] = value
+    if "interval" in body:
+        try:
+            value = int(body["interval"])
+        except (TypeError, ValueError):
+            return jsonify({"error": "扫描间隔必须是整数（秒）"}), 400
+        if not (watcher_mod.MIN_INTERVAL <= value <= watcher_mod.MAX_INTERVAL):
+            return jsonify({"error": "扫描间隔需在 5~60 秒之间"}), 400
+        data["watch_interval"] = value
+
+    if data["watch_enabled"] and not data["watch_folder"]:
+        return jsonify({"error": "启用监听前请先选择文件夹"}), 400
+
+    settings_mod.save(data, base_dir=current_app.extensions["base_dir"])
+    config, _state = _watcher().scan_once()
+    log.info("监听规则已保存：enabled=%s folder=%r format=%s",
+             config["enabled"], config["folder"], config["format"])
+    return jsonify(_watcher().snapshot())
+
+
+def _watcher():
+    return current_app.extensions["watcher"]
 
 
 @bp.post("/api/cancel")

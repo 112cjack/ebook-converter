@@ -16,6 +16,7 @@ import ebook_converter as ec
 
 from . import api, settings
 from .tasks import TaskManager
+from .watcher import FolderWatcher
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("ebook-converter")
@@ -70,6 +71,9 @@ def create_app(base_dir=None, testing=False):
 
     manager = TaskManager(upload_dir, engine_resolver=make_engine_resolver(settings_data, base))
     app.extensions["task_manager"] = manager
+    watcher = FolderWatcher(settings_data)
+    app.extensions["watcher"] = watcher
+    watcher.start()
     if settings_data.get("output_dir"):
         manager.registered_dirs.add(str(Path(settings_data["output_dir"])))
 

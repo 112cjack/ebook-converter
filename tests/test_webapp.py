@@ -674,6 +674,95 @@ class TestShortcut:
         assert resp.status_code == 500
 
 
+# ── 文件夹监听（F8）──
+
+
+class TestWatch:
+    def _set_watch(self, app_env, **kw):
+        app_env.extensions["settings_data"].update(kw)
+
+    def test_classify_two_kinds(self, tmp_path):
+        from webapp.watcher import classify, KIND_UNCONVERTIBLE, KIND_WRONG_FORMAT
+        assert classify(tmp_path / "a.epub", "epub") is None
+        assert classify(tmp_path / "b.mobi", "epub") == KIND_WRONG_FORMAT
+        assert classify(tmp_path / "c.exe", "epub") == KIND_UNCONVERTIBLE
+
+    def test_scan_reports_violations_and_skips_fresh_files(self, app_env, tmp_path):
+        import os
+        self._set_watch(app_env, watch_enabled=True, watch_folder=str(tmp_path),
+                        watch_format="epub")
+        old_mobi = tmp_path / "旧书.mobi"
+        old_mobi.write_bytes(b"x")
+        past = time.time() - 60
+        os.utime(old_mobi, (past, past))  # 60 秒前的稳定文件
+        (tmp_path / "刚复制.mobi").write_bytes(b"x")  # 10 秒内的新文件应被跳过
+        watcher = app_env.extensions["watcher"]
+        _config, state = watcher.scan_once()
+        names = [v["name"] for v in state["violations"]]
+        assert names == ["旧书.mobi"]
+        assert state["violations"][0]["kind"] == "wrong_format"
+
+    def test_unreachable_folder_reported_not_crash(self, app_env, tmp_path):
+        self._set_watch(app_env, watch_enabled=True,
+                        watch_folder=str(tmp_path / "不存在的文件夹"), watch_format="epub")
+        _config, state = app_env.extensions["watcher"].scan_once()
+        assert state["reachable"] is False
+        assert state["violations"] == []
+
+    def test_fresh_reported_once_then_again_after_removal(self, app_env, tmp_path):
+        self._set_watch(app_env, watch_enabled=True, watch_folder=str(tmp_path),
+                        watch_format="epub")
+        mobi = tmp_path / "a.mobi"
+        mobi.write_bytes(b"x")
+        os_utime_past(mobi)
+        watcher = app_env.extensions["watcher"]
+        _c, s1 = watcher.scan_once()
+        assert len(s1["fresh"]) == 1
+        _c, s2 = watcher.scan_once()
+        assert s2["fresh"] == []            # 不重复提示
+        mobi.unlink()                        # 移走
+        _c, s3 = watcher.scan_once()
+        assert s3["violations"] == []
+        mobi.write_bytes(b"x")               # 再出现
+        os_utime_past(mobi)
+        _c, s4 = watcher.scan_once()
+        assert len(s4["fresh"]) == 1         # 再次提示
+
+    def test_disabled_clears_violations(self, app_env, tmp_path):
+        self._set_watch(app_env, watch_enabled=False, watch_folder=str(tmp_path))
+        _config, state = app_env.extensions["watcher"].scan_once()
+        assert state["violations"] == []
+        assert state["reachable"] is None
+
+    def test_post_watch_validates_and_persists(self, client, app_env, tmp_path):
+        bad = client.post("/api/watch", json={"enabled": True, "folder": ""})
+        assert bad.status_code == 400
+        bad_fmt = client.post("/api/watch",
+                              json={"enabled": True, "folder": str(tmp_path), "format": "exe"})
+        assert bad_fmt.status_code == 400
+        rel = client.post("/api/watch", json={"folder": "relative/path"})
+        assert rel.status_code == 400
+        ok = client.post("/api/watch", json={"enabled": True, "folder": str(tmp_path),
+                                             "format": "mobi", "interval": 10})
+        assert ok.status_code == 200
+        body = ok.get_json()
+        assert body["enabled"] is True and body["format"] == "mobi"
+        on_disk = json.loads((app_env.extensions["base_dir"] / "settings.json")
+                             .read_text(encoding="utf-8"))
+        assert on_disk["watch_enabled"] is True and on_disk["watch_interval"] == 10
+
+    def test_tasks_response_carries_engine(self, client):
+        body = client.get("/api/tasks").get_json()
+        assert "engine" in body
+        assert body["engine"]["install"]["state"] == "idle"
+
+
+def os_utime_past(path, seconds=60):
+    import os
+    past = time.time() - seconds
+    os.utime(path, (past, past))
+
+
 # ── 状态与页面 ──
 
 
