@@ -182,6 +182,16 @@ body{
          display: inline-flex; align-items: center; gap: 5px; }
 .x-fail .ic{ width: 14px; height: 14px; }
 .x-reason{ font-size: 12px; color: var(--x-muted); overflow-wrap: anywhere; }
+.x-detail summary{ font-size: 12px; color: var(--x-muted); cursor: pointer; }
+.x-detail code{
+  display: block; margin-top: 3px; font-size: 11px; color: var(--x-muted);
+  font-family: var(--x-mono); overflow-wrap: anywhere;
+}
+.x-flagwarn{
+  font-size: 11px; color: var(--x-amber);
+  border: 1px solid var(--x-amber); border-radius: 5px; padding: 0 5px;
+  margin-left: 6px; white-space: nowrap;
+}
 .x-acts{ display: flex; align-items: center; gap: 2px; }
 .x-mini{
   display: inline-flex; align-items: center; gap: 5px;
@@ -221,6 +231,32 @@ body{
 }
 .x-ofill{ height: 100%; border-radius: 999px; background: var(--x-sealbg); transition: width .2s ease-out; }
 .x-otext{ font-size: 12px; color: var(--x-muted); font-family: var(--x-mono); }
+
+/* ── 断连提示条 ── */
+.x-connbar{
+  padding: 9px 20px; font-size: 13px; font-weight: 600;
+  background: light-dark(#F3DEDE, #3A2525); color: var(--x-clay);
+  border-bottom: 1px solid var(--x-line);
+}
+
+/* ── 目录浏览器 ── */
+.x-browsebar{ display: flex; align-items: center; gap: 8px; }
+.x-browsecwd{ flex: 1; min-width: 0; }
+.x-browsebody{
+  border: 1px solid var(--x-line); border-radius: 8px;
+  background: var(--x-paper);
+  height: 260px; overflow: auto;
+}
+.x-browserow{
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; text-align: left; cursor: pointer;
+  font: inherit; font-size: 13px; color: var(--x-ink);
+  background: none; border: none;
+  padding: 7px 12px; border-bottom: 1px solid var(--x-line);
+}
+.x-browserow:last-child{ border-bottom: none; }
+.x-browserow:hover{ background: var(--x-dropbg); }
+.x-browseempty{ padding: 18px; text-align: center; color: var(--x-muted); font-size: 13px; }
 
 /* ── toasts ── */
 .x-toasts{

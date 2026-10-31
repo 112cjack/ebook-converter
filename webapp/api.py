@@ -212,9 +212,9 @@ def cancel_task():
 
 
 def list_drives():
-    """本机可用盘符（Windows）；其他平台返回根目录。"""
+    """本机可用盘符（Windows，如 "C:"）；其他平台返回根目录。"""
     if sys.platform == "win32":
-        return [f"{c}" for c in string.ascii_uppercase if Path(f"{c}:/").exists()]
+        return [f"{c}:" for c in string.ascii_uppercase if Path(f"{c}:/").exists()]
     return ["/"]
 
 

@@ -29,6 +29,8 @@
     timer: null,
     wasBusy: false,
     lastOutputDir: null,
+    outputDir: null,   // 用户在目录浏览器中显式选定，优先于 lastOutputDir
+    guideShown: false,
     uploading: false,
   };
 
@@ -66,8 +68,21 @@
     setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 4500);
   }
 
+  function showConnBanner(visible) {
+    var bar = $("x-connbar");
+    if (bar) bar.hidden = !visible;
+  }
+
+  var CONN_MSG = "无法连接本地服务，程序可能已关闭——请重新打开程序，再刷新本页面。";
+
   function api(path, options) {
-    return fetch(path, options).then(function (resp) {
+    return fetch(path, options).catch(function () {
+      showConnBanner(true);
+      var err = new Error(CONN_MSG);
+      err.network = true;
+      throw err;
+    }).then(function (resp) {
+      showConnBanner(false);
       return resp.json().catch(function () { return {}; }).then(function (body) {
         if (!resp.ok) {
           var err = new Error(body.error || ("请求失败（" + resp.status + "）"));
@@ -82,14 +97,31 @@
 
   // ── 状态加载与轮询 ──
 
+  function engineReady() {
+    return !!(state.engine && state.engine.installed);
+  }
+
   function loadStatus() {
     return api("/api/status").then(function (body) {
       state.engine = body.engine;
       state.outputFormats = body.output_formats || [];
       state.inputExtensions = body.input_extensions || [];
+      state.settings = body.settings || {};
       renderEngineBadge();
       renderFormatButtons();
       renderAcceptHint();
+      renderOutdirHint();
+      if (state.engine && !state.engine.installing) {
+        if (state.engine.installed) {
+          if (state.engine.version && !state._announcedEngine) {
+            toast("Calibre 已就绪 · " + state.engine.version, "ok");
+            state._announcedEngine = true;
+          }
+        } else if (!state.guideShown) {
+          state.guideShown = true;
+          $("x-guidedlg").showModal();
+        }
+      }
     });
   }
 
@@ -221,7 +253,19 @@
     row.appendChild(spine);
 
     var file = el("div", "x-file");
-    file.appendChild(el("div", "x-name", upload.name));
+    var nameRow = el("div", "x-name");
+    nameRow.textContent = upload.name;
+    if (upload.scanned_pdf) {
+      var flag = el("span", "x-flagwarn", "扫描版");
+      flag.title = "疑似扫描版 PDF（无文字层），转成文本格式可能内容缺失";
+      nameRow.appendChild(flag);
+    }
+    if (upload.truncated) {
+      var trunc = el("span", "x-flagwarn", "文件名过长已截断");
+      trunc.title = "原文件名超出系统路径长度限制，已自动截断";
+      nameRow.appendChild(trunc);
+    }
+    file.appendChild(nameRow);
     file.appendChild(el("div", "x-meta", sizeFmt(upload.size) + " · " + fmtLabel(upload.format)));
     row.appendChild(file);
 
@@ -263,9 +307,14 @@
       st.appendChild(wrap);
     } else if (task.status === "skipped") {
       var skipWrap = el("div", "x-failwrap");
-      skipWrap.appendChild(el("span", "x-badge", "已跳过"));
+      skipWrap.appendChild(el("span", "x-badge", task.status_label));
       skipWrap.appendChild(el("span", "x-reason", task.message || ""));
       st.appendChild(skipWrap);
+    } else if (task.status === "cancelled") {
+      var cw = el("div", "x-failwrap");
+      cw.appendChild(el("span", "x-badge", "已取消"));
+      cw.appendChild(el("span", "x-reason", task.message || "已取消"));
+      st.appendChild(cw);
     } else {  // failed
       var fw = el("div", "x-failwrap");
       var f1 = el("span", "x-fail");
@@ -273,6 +322,14 @@
       f1.appendChild(document.createTextNode("转换失败"));
       fw.appendChild(f1);
       fw.appendChild(el("span", "x-reason", task.error || "转换失败"));
+      if (task.error_detail) {
+        var detail = el("details", "x-detail");
+        var summary = el("summary", "", "查看详情");
+        var code = el("code", "", task.error_detail);
+        detail.appendChild(summary);
+        detail.appendChild(code);
+        fw.appendChild(detail);
+      }
       st.appendChild(fw);
     }
     return st;
@@ -292,8 +349,21 @@
       var retry = el("button", "x-mini", "重试");
       retry.type = "button";
       retry.insertBefore(icon("rotate-ccw"), retry.firstChild);
-      retry.addEventListener("click", function () { retryTask(upload.id, task.format_out); });
+      retry.addEventListener("click", function () { retryTask(upload.id, task.format_out, false); });
       acts.appendChild(retry);
+    }
+    if (task && (task.status === "done" || task.status === "skipped" || task.status === "cancelled")) {
+      var re = el("button", "x-mini", task.status === "done" ? "重新转换" : "重新转换");
+      re.type = "button";
+      re.title = "覆盖旧输出并重新转换";
+      re.addEventListener("click", function () { retryTask(upload.id, task.format_out, true); });
+      acts.appendChild(re);
+    }
+    if (task && task.status === "converting") {
+      var cancel = el("button", "x-mini", "取消");
+      cancel.type = "button";
+      cancel.addEventListener("click", function () { cancelTask(task.id); });
+      acts.appendChild(cancel);
     }
     if (!busy) {
       var rm = el("button", "x-icobtn");
@@ -306,17 +376,24 @@
     return acts;
   }
 
+  function renderOutdirHint() {
+    var path = state.outputDir || state.lastOutputDir ||
+      (state.settings && state.settings.output_dir) || "";
+    $("x-outdir-text").textContent = path || "默认目录（程序目录下 converted）";
+  }
+
   function updateAction() {
     var waiting = state.uploads.filter(function (u) {
       return !u.removed && !latestTaskOf(u.id);
     }).length;
     var go = $("x-go");
-    go.disabled = !state.to || !waiting;
+    go.disabled = !state.to || !waiting || !engineReady();
     Array.prototype.forEach.call(document.querySelectorAll(".x-segbtn"), function (b) {
       b.disabled = state.uploading;
     });
     var helper = $("x-helper");
-    if (!state.to) helper.textContent = "请先选择输出格式";
+    if (!engineReady()) helper.textContent = "未检测到转换引擎，暂时无法转换";
+    else if (!state.to) helper.textContent = "请先选择输出格式";
     else if (waiting) helper.textContent = "输出为 " + fmtLabel(state.to) + " · 待转换 " + waiting + " 个文件";
     else helper.textContent = "输出为 " + fmtLabel(state.to) + " · 没有待转换文件";
   }
@@ -342,7 +419,55 @@
           break;
         }
       }
+      renderOutdirHint();
     }
+  }
+
+  // ── 目录浏览器 ──
+
+  var browseCurrent = null;
+  var browseParent = null;
+
+  function openBrowse() {
+    browseCurrent = state.outputDir || state.lastOutputDir || null;
+    browseParent = null;
+    $("x-browsedlg").showModal();
+    loadBrowse(browseCurrent);
+  }
+
+  function loadBrowse(path) {
+    var url = path ? "/api/browse?path=" + encodeURIComponent(path) : "/api/browse";
+    api(url).then(function (body) {
+      browseCurrent = body.current;
+      browseParent = body.parent;
+      $("x-browsecwd").textContent = body.current || "本机";
+      $("x-browseup").disabled = !body.parent;
+      var list = $("x-browsebody");
+      list.textContent = "";
+      if (!body.entries.length) {
+        list.appendChild(el("div", "x-browseempty", "此目录下没有子文件夹。"));
+        return;
+      }
+      body.entries.forEach(function (entry) {
+        var row = el("button", "x-browserow");
+        row.type = "button";
+        row.appendChild(icon("folder-open"));
+        row.appendChild(document.createTextNode(entry.name));
+        row.addEventListener("click", function () { loadBrowse(entry.path); });
+        list.appendChild(row);
+      });
+    }).catch(function (err) {
+      if (!err.network) toast(err.message, "warn");
+    });
+  }
+
+  function chooseBrowse() {
+    if (browseCurrent) {
+      state.outputDir = browseCurrent;
+      renderOutdirHint();
+      toast("输出目录已选定：" + browseCurrent, "ok");
+    }
+    $("x-browsedlg").close();
   }
 
   // ── 动作 ──
@@ -380,20 +505,24 @@
 
   function startConvert() {
     if (!state.to) { toast("请先选择输出格式", "warn"); return; }
+    if (!engineReady()) { toast("未检测到转换引擎，请先安装或指定 Calibre", "warn"); return; }
     var waiting = state.uploads.filter(function (u) {
       return !u.removed && !latestTaskOf(u.id);
     }).map(function (u) { return u.id; });
     if (!waiting.length) { toast("没有待转换的文件", "warn"); return; }
+    var body = { format: state.to, upload_ids: waiting };
+    var outDir = state.outputDir || state.lastOutputDir;
+    if (outDir) body.output_dir = outDir;
     api("/api/convert", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ format: state.to, upload_ids: waiting }),
+      body: JSON.stringify(body),
     }).then(function () {
       announce("开始转换，共 " + waiting.length + " 个文件");
       state.wasBusy = true;
       return refreshTasks();
     }).catch(function (err) {
-      toast(err.message, "warn");
+      if (!err.network) toast(err.message, "warn");
       if (err.body && err.body.engine && err.body.engine.installed === false) {
         renderEngineBadge();
         $("x-guidedlg").showModal();
@@ -402,16 +531,28 @@
     });
   }
 
-  function retryTask(uploadId, format) {
+  function retryTask(uploadId, format, overwrite) {
+    var body = { format: format, upload_ids: [uploadId] };
+    if (overwrite) body.overwrite = true;
     api("/api/convert", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ format: format, upload_ids: [uploadId] }),
+      body: JSON.stringify(body),
     }).then(function () {
-      toast("已重新加入队列", "ok");
+      toast(overwrite ? "已重新开始转换（将覆盖旧输出）" : "已重新加入队列", "ok");
       state.wasBusy = true;
       return refreshTasks();
-    }).catch(function (err) { toast(err.message, "warn"); });
+    }).catch(function (err) { if (!err.network) toast(err.message, "warn"); });
+  }
+
+  function cancelTask(taskId) {
+    api("/api/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ task_id: taskId }),
+    }).then(function () {
+      return refreshTasks();
+    }).catch(function (err) { if (!err.network) toast(err.message, "warn"); });
   }
 
   function removeUploads(ids) {
@@ -422,7 +563,7 @@
     }).then(function (body) {
       if (body.busy && body.busy.length) toast("转换中的文件暂不能移除", "warn");
       return refreshTasks();
-    }).catch(function (err) { toast(err.message, "warn"); });
+    }).catch(function (err) { if (!err.network) toast(err.message, "warn"); });
   }
 
   function clearList() {
@@ -433,7 +574,7 @@
     }).then(function () {
       announce("列表已清空");
       return refreshTasks();
-    }).catch(function (err) { toast(err.message, "warn"); });
+    }).catch(function (err) { if (!err.network) toast(err.message, "warn"); });
   }
 
   function openFolder(path) {
@@ -442,7 +583,7 @@
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ path: path }),
-    }).catch(function (err) { toast(err.message, "warn"); });
+    }).catch(function (err) { if (!err.network) toast(err.message, "warn"); });
   }
 
   // ── 对话框 ──
@@ -526,7 +667,12 @@
 
   $("x-go").addEventListener("click", startConvert);
   $("x-clear").addEventListener("click", clearList);
-  $("x-openout").addEventListener("click", function () { openFolder(state.lastOutputDir); });
+  $("x-openout").addEventListener("click", function () { openFolder(state.outputDir || state.lastOutputDir); });
+  $("x-browsebtn").addEventListener("click", openBrowse);
+  $("x-browseup").addEventListener("click", function () { if (browseParent) loadBrowse(browseParent); });
+  $("x-browseclose").addEventListener("click", function () { $("x-browsedlg").close(); });
+  $("x-browsecancel").addEventListener("click", function () { $("x-browsedlg").close(); });
+  $("x-browseok").addEventListener("click", chooseBrowse);
 
   $("x-setbtn").addEventListener("click", openSettings);
   $("x-setclose").addEventListener("click", function () { $("x-setdlg").close(); });

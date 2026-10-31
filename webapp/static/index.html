@@ -39,6 +39,8 @@
   <button class="x-btn" id="x-guidebtn" type="button">查看安装引导</button>
 </div>
 
+<div class="x-connbar" id="x-connbar" hidden>无法连接本地服务，程序可能已关闭——请重新打开程序，再刷新本页面。</div>
+
 <main class="x-main">
   <section class="x-drop" id="x-drop" aria-label="文件导入区">
     <svg class="x-dropicon" aria-hidden="true"><use href="#i-book-open"/></svg>
@@ -65,6 +67,7 @@
     <span class="x-fmtlabel" id="x-fmtlabel">输出格式</span>
     <div class="x-seg" id="x-seg" role="group" aria-labelledby="x-fmtlabel"></div>
     <div class="x-helper" id="x-helper">请先选择输出格式</div>
+    <div class="x-helper" id="x-outdir-hint" title="转换结果将保存到此处">将输出到：<span id="x-outdir-text">默认目录</span> <button class="x-linkbtn" id="x-browsebtn" type="button">选择目录</button></div>
   </div>
   <div class="x-run">
     <div class="x-oprog" aria-hidden="true">
@@ -110,6 +113,24 @@
   <div class="x-dlgbody" id="x-histbody"></div>
   <div class="x-dlgfoot">
     <button class="x-btn" id="x-histok" type="button">关闭</button>
+  </div>
+</dialog>
+
+<dialog id="x-browsedlg" class="x-dlg" aria-labelledby="x-browsetitle">
+  <div class="x-dlghead">
+    <span class="x-dlgtitle" id="x-browsetitle">选择输出目录</span>
+    <button class="x-icobtn" id="x-browseclose" type="button" aria-label="关闭"><svg class="ic"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="x-dlgbody">
+    <div class="x-browsebar">
+      <button class="x-btn x-btnsm" id="x-browseup" type="button">上一级</button>
+      <code class="x-cmd x-browsecwd" id="x-browsecwd">正在加载…</code>
+    </div>
+    <div class="x-browsebody" id="x-browsebody"></div>
+  </div>
+  <div class="x-dlgfoot">
+    <button class="x-btn" id="x-browsecancel" type="button">取消</button>
+    <button class="x-primary x-btnsm" id="x-browseok" type="button">选择此目录</button>
   </div>
 </dialog>
 
