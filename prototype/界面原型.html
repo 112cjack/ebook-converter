@@ -13,17 +13,17 @@
 <style>
 #ebook-converter-demo{
   color-scheme: dark;
-  --x-paper:#191512; --x-surface:#221D16; --x-dropbg:#1E1913;
+  --x-paper:#191512; --x-surface:rgba(34,29,22,.82); --x-dropbg:rgba(30,25,19,.6);
   --x-ink:#EAE0CB; --x-muted:#9C9078; --x-line:#3A3327;
   --x-accent:#D9A441; --x-accentbg:#C89138; --x-onaccent:#221C10;
   --x-moss:#93AF87; --x-clay:#D98B72; --x-track:#322C22;
   --x-drophover:#2A241C;
   --x-texture:
-    radial-gradient(120% 100% at 50% 0%, rgba(0,0,0,0) 52%, rgba(0,0,0,.4) 100%),
-    radial-gradient(60% 26% at 50% 0%, rgba(255,214,140,.08), transparent 72%),
+    radial-gradient(120% 100% at 50% 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,.46) 100%),
     repeating-linear-gradient(0deg, rgba(234,224,203,.05) 0 1px, transparent 1px 4px);
+  --x-scene: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20480%20320%22%20preserveAspectRatio%3D%22xMidYMax%20slice%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22c%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23FFD9A0%22%20stop-opacity%3D%22.26%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23FFD9A0%22%20stop-opacity%3D%220%22%2F%3E%3C%2FlinearGradient%3E%3CradialGradient%20id%3D%22g%22%20cx%3D%22.5%22%20cy%3D%22.5%22%20r%3D%22.5%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23FFD9A0%22%20stop-opacity%3D%22.45%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23FFD9A0%22%20stop-opacity%3D%220%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Cpolygon%20points%3D%22318%2C150%20352%2C150%20404%2C221%20266%2C221%22%20fill%3D%22url%28%23c%29%22%2F%3E%3Cellipse%20cx%3D%22335%22%20cy%3D%22122%22%20rx%3D%2246%22%20ry%3D%2234%22%20fill%3D%22url%28%23g%29%22%2F%3E%3Cpath%20d%3D%22M303%20221%20C310%20192%20318%20170%20331%20146%22%20stroke%3D%22%230D0A07%22%20stroke-width%3D%225%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%2F%3E%3Cpath%20d%3D%22M313%20128%20L351%20122%20L362%20146%20L318%20152%20Z%22%20fill%3D%22%230D0A07%22%20stroke%3D%22%23FFC887%22%20stroke-opacity%3D%22.4%22%20stroke-width%3D%221.8%22%2F%3E%3Cellipse%20cx%3D%22337%22%20cy%3D%22151%22%20rx%3D%2220%22%20ry%3D%225%22%20fill%3D%22%23FFD9A0%22%20opacity%3D%22.6%22%2F%3E%3Cpath%20d%3D%22M281%20214%20h58%20v7%20h-58%20z%22%20fill%3D%22%230D0A07%22%2F%3E%3Crect%20y%3D%22221%22%20width%3D%22480%22%20height%3D%2299%22%20fill%3D%22%23231810%22%2F%3E%3Crect%20y%3D%22221%22%20width%3D%22480%22%20height%3D%222.5%22%20fill%3D%22%23FFC887%22%20opacity%3D%22.16%22%2F%3E%3Cg%20stroke%3D%22%23000%22%20stroke-opacity%3D%22.4%22%20stroke-width%3D%221.6%22%3E%3Cline%20x1%3D%220%22%20y1%3D%22247%22%20x2%3D%22480%22%20y2%3D%22245%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22274%22%20x2%3D%22480%22%20y2%3D%22276%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22300%22%20x2%3D%22480%22%20y2%3D%22299%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22%23FFB870%22%20stroke-opacity%3D%22.09%22%20stroke-width%3D%221.4%22%3E%3Cline%20x1%3D%220%22%20y1%3D%22236%22%20x2%3D%22480%22%20y2%3D%22235%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22262%22%20x2%3D%22480%22%20y2%3D%22263%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22289%22%20x2%3D%22480%22%20y2%3D%22288%22%2F%3E%3C%2Fg%3E%3Crect%20x%3D%2286%22%20y%3D%22196%22%20width%3D%2266%22%20height%3D%2225%22%20rx%3D%222.5%22%20fill%3D%22%232B1D12%22%2F%3E%3Crect%20x%3D%2292%22%20y%3D%22174%22%20width%3D%2258%22%20height%3D%2222%22%20rx%3D%222.5%22%20fill%3D%22%23241811%22%2F%3E%3Crect%20x%3D%2298%22%20y%3D%22155%22%20width%3D%2250%22%20height%3D%2219%22%20rx%3D%222.5%22%20fill%3D%22%232E2013%22%2F%3E%3Crect%20x%3D%2286%22%20y%3D%22217%22%20width%3D%2266%22%20height%3D%223%22%20fill%3D%22%23FFC887%22%20opacity%3D%22.14%22%2F%3E%3Cellipse%20cx%3D%22334%22%20cy%3D%22230%22%20rx%3D%22100%22%20ry%3D%2213%22%20fill%3D%22%23FFC887%22%20opacity%3D%22.13%22%2F%3E%3C%2Fsvg%3E");
   --x-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
-  --x-grain:.42;
+  --x-grain:.5;
   --x-serif: Georgia, "Songti SC", "SimSun", serif;
   --x-mono: Consolas, "Courier New", monospace;
   font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
@@ -31,21 +31,20 @@
 }
 #ebook-converter-demo[data-theme="kindle"]{
   color-scheme: light;
-  --x-paper:#F1F2EE; --x-surface:rgba(255,255,255,.66); --x-dropbg:rgba(255,255,255,.5);
-  --x-ink:#1B1B18; --x-muted:#6F6F68; --x-line:rgba(27,27,24,.14);
+  --x-paper:#A8A49B; --x-surface:rgba(255,255,255,.58); --x-dropbg:rgba(255,255,255,.44);
+  --x-ink:#1B1B18; --x-muted:#403D37; --x-line:rgba(27,27,24,.16);
   --x-accent:#1B1B18; --x-accentbg:#1B1B18; --x-onaccent:#FBFBF7;
   --x-moss:#2F6640; --x-clay:#A63A2B; --x-track:rgba(27,27,24,.1);
   --x-drophover:rgba(255,255,255,.85);
   --x-texture:
-    radial-gradient(120% 100% at 50% 0%, rgba(0,0,0,0) 60%, rgba(84,94,84,.28) 100%),
-    radial-gradient(60% 50% at 15% 8%, rgba(151,171,143,.34), transparent 62%),
-    radial-gradient(50% 45% at 88% 16%, rgba(196,181,158,.36), transparent 62%),
-    radial-gradient(70% 60% at 55% 96%, rgba(158,175,190,.3), transparent 65%);
-  --x-grain:.34;
+    radial-gradient(120% 100% at 50% 0%, rgba(27,27,24,0) 56%, rgba(27,27,24,.34) 100%),
+    radial-gradient(60% 26% at 50% 0%, rgba(255,250,238,.15), transparent 72%);
+  --x-scene: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20480%20320%22%20preserveAspectRatio%3D%22xMidYMax%20slice%22%3E%3Crect%20x%3D%2212%22%20y%3D%2212%22%20width%3D%22456%22%20height%3D%22296%22%20fill%3D%22none%22%20stroke%3D%22rgba%2827%2C27%2C24%2C.2%29%22%20stroke-width%3D%221.5%22%2F%3E%3Crect%20x%3D%2218%22%20y%3D%2218%22%20width%3D%22444%22%20height%3D%22284%22%20fill%3D%22none%22%20stroke%3D%22rgba%2827%2C27%2C24%2C.09%29%22%20stroke-width%3D%221%22%2F%3E%3Crect%20y%3D%22252%22%20width%3D%22480%22%20height%3D%2268%22%20fill%3D%22rgba%2827%2C27%2C24%2C.12%29%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22252%22%20x2%3D%22480%22%20y2%3D%22252%22%20stroke%3D%22rgba%2827%2C27%2C24%2C.4%29%22%20stroke-width%3D%222%22%2F%3E%3Crect%20width%3D%22480%22%20height%3D%2290%22%20fill%3D%22rgba%28255%2C250%2C238%2C.12%29%22%2F%3E%3Cg%20fill%3D%22rgba%2837%2C35%2C30%2C.82%29%22%3E%3Crect%20x%3D%22146%22%20y%3D%22226%22%20width%3D%22132%22%20height%3D%2226%22%20rx%3D%222%22%2F%3E%3Crect%20x%3D%22154%22%20y%3D%22200%22%20width%3D%22116%22%20height%3D%2226%22%20rx%3D%222%22%2F%3E%3Crect%20x%3D%22162%22%20y%3D%22176%22%20width%3D%22100%22%20height%3D%2224%22%20rx%3D%222%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22rgba%28168%2C164%2C155%2C.6%29%22%20stroke-width%3D%221.5%22%3E%3Cline%20x1%3D%22150%22%20y1%3D%22245%22%20x2%3D%22274%22%20y2%3D%22245%22%2F%3E%3Cline%20x1%3D%22158%22%20y1%3D%22219%22%20x2%3D%22266%22%20y2%3D%22219%22%2F%3E%3Cline%20x1%3D%22166%22%20y1%3D%22194%22%20x2%3D%22258%22%20y2%3D%22194%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22rgba%28240%2C238%2C230%2C.55%29%22%3E%3Crect%20x%3D%22160%22%20y%3D%22236%22%20width%3D%2236%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%22168%22%20y%3D%22210%22%20width%3D%2230%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%22176%22%20y%3D%22185%22%20width%3D%2226%22%20height%3D%223%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22rgba%2837%2C35%2C30%2C.78%29%22%20stroke-width%3D%223%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M356%20218%20v28%20a14%2014%200%200%200%2028%200%20v-28%22%2F%3E%3Cpath%20d%3D%22M384%20224%20q15%202%200%2016%22%2F%3E%3Cline%20x1%3D%22348%22%20y1%3D%22250%22%20x2%3D%22392%22%20y2%3D%22250%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22M366%20208%20q4%20-8%200%20-14%20M378%20208%20q4%20-8%200%20-14%22%20stroke%3D%22rgba%2837%2C35%2C30%2C.35%29%22%20stroke-width%3D%222.5%22%20fill%3D%22none%22%2F%3E%3Cg%20stroke%3D%22rgba%2837%2C35%2C30%2C.62%29%22%20stroke-width%3D%223%22%20fill%3D%22none%22%3E%3Ccircle%20cx%3D%22424%22%20cy%3D%22240%22%20r%3D%2211%22%2F%3E%3Ccircle%20cx%3D%22452%22%20cy%3D%22240%22%20r%3D%2211%22%2F%3E%3Cpath%20d%3D%22M435%20238%20q3%20-5%206%200%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+  --x-grain:.42;
 }
 #ebook-converter-demo[data-theme="santi"]{
   color-scheme: dark;
-  --x-paper:#0A0E17; --x-surface:#111726; --x-dropbg:#0D1320;
+  --x-paper:#0A0E17; --x-surface:rgba(17,23,38,.8); --x-dropbg:rgba(13,19,32,.62);
   --x-ink:#D7DFEF; --x-muted:#7E8AA8; --x-line:#222C44;
   --x-accent:#D6544A; --x-accentbg:#C24940; --x-onaccent:#FFFFFF;
   --x-moss:#7FB08E; --x-clay:#E08579; --x-track:#1D2536;
@@ -65,7 +64,8 @@
     radial-gradient(1px 1px at 64% 86%, rgba(214,84,74,.4) 50%, transparent 51%),
     radial-gradient(70% 45% at 82% -8%, rgba(214,84,74,.22), transparent 65%),
     radial-gradient(60% 40% at 8% 108%, rgba(90,130,220,.16), transparent 65%);
-  --x-grain:.38;
+  --x-scene: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20480%20320%22%20preserveAspectRatio%3D%22xMidYMax%20slice%22%3E%3Crect%20y%3D%22218%22%20width%3D%22480%22%20height%3D%22102%22%20fill%3D%22%230B1424%22%2F%3E%3Cg%20stroke%3D%22rgba%28120%2C160%2C220%2C.12%29%22%20stroke-width%3D%221.4%22%3E%3Cline%20x1%3D%220%22%20y1%3D%22236%22%20x2%3D%22480%22%20y2%3D%22234%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22258%22%20x2%3D%22480%22%20y2%3D%22260%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22282%22%20x2%3D%22480%22%20y2%3D%22280%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22304%22%20x2%3D%22480%22%20y2%3D%22302%22%2F%3E%3C%2Fg%3E%3Cpolygon%20points%3D%220%2C96%2046%2C118%2046%2C320%200%2C320%22%20fill%3D%22rgba%284%2C7%2C14%2C.92%29%22%2F%3E%3Cpolygon%20points%3D%22480%2C96%20434%2C118%20434%2C320%20480%2C320%22%20fill%3D%22rgba%284%2C7%2C14%2C.92%29%22%2F%3E%3Cpolygon%20points%3D%2246%2C116%2062%2C120%20210%2C218%20156%2C218%22%20fill%3D%22rgba%28190%2C215%2C255%2C.055%29%22%2F%3E%3Cpolygon%20points%3D%22434%2C116%20418%2C120%20300%2C218%20354%2C218%22%20fill%3D%22rgba%28190%2C215%2C255%2C.055%29%22%2F%3E%3Cpath%20d%3D%22M80%20218%20L90%20168%20L136%20168%20L136%20146%20L196%20146%20L196%20152%20L238%20152%20L238%20132%20L272%20132%20L272%20152%20L306%20152%20L306%20126%20L338%20126%20L338%20168%20L392%20168%20L402%20218%20Z%22%20fill%3D%22%2304060C%22%2F%3E%3Crect%20x%3D%2280%22%20y%3D%22212%22%20width%3D%22322%22%20height%3D%222.5%22%20fill%3D%22rgba%28214%2C84%2C74%2C.55%29%22%2F%3E%3Ccircle%20cx%3D%22316%22%20cy%3D%22140%22%20r%3D%222.6%22%20fill%3D%22rgba%28214%2C84%2C74%2C.85%29%22%2F%3E%3Ccircle%20cx%3D%2286%22%20cy%3D%22206%22%20r%3D%222%22%20fill%3D%22rgba%28120%2C220%2C180%2C.6%29%22%2F%3E%3Ccircle%20cx%3D%22396%22%20cy%3D%22206%22%20r%3D%222%22%20fill%3D%22rgba%28214%2C84%2C74%2C.7%29%22%2F%3E%3Cg%20stroke%3D%22rgba%28215%2C223%2C239%2C.32%29%22%20stroke-width%3D%220.9%22%3E%3Cline%20x1%3D%2260%22%20y1%3D%2266%22%20x2%3D%2260%22%20y2%3D%22226%22%2F%3E%3Cline%20x1%3D%2284%22%20y1%3D%2260%22%20x2%3D%2284%22%20y2%3D%22228%22%2F%3E%3Cline%20x1%3D%22108%22%20y1%3D%2256%22%20x2%3D%22108%22%20y2%3D%22230%22%2F%3E%3Cline%20x1%3D%22132%22%20y1%3D%2252%22%20x2%3D%22132%22%20y2%3D%22231%22%2F%3E%3Cline%20x1%3D%22156%22%20y1%3D%2250%22%20x2%3D%22156%22%20y2%3D%22232%22%2F%3E%3Cline%20x1%3D%22180%22%20y1%3D%2248%22%20x2%3D%22180%22%20y2%3D%22233%22%2F%3E%3Cline%20x1%3D%22204%22%20y1%3D%2246%22%20x2%3D%22204%22%20y2%3D%22234%22%2F%3E%3Cline%20x1%3D%22228%22%20y1%3D%2244%22%20x2%3D%22228%22%20y2%3D%22234%22%2F%3E%3Cline%20x1%3D%22252%22%20y1%3D%2244%22%20x2%3D%22252%22%20y2%3D%22234%22%2F%3E%3Cline%20x1%3D%22276%22%20y1%3D%2246%22%20x2%3D%22276%22%20y2%3D%22233%22%2F%3E%3Cline%20x1%3D%22300%22%20y1%3D%2248%22%20x2%3D%22300%22%20y2%3D%22232%22%2F%3E%3Cline%20x1%3D%22324%22%20y1%3D%2252%22%20x2%3D%22324%22%20y2%3D%22231%22%2F%3E%3Cline%20x1%3D%22348%22%20y1%3D%2256%22%20x2%3D%22348%22%20y2%3D%22230%22%2F%3E%3Cline%20x1%3D%22372%22%20y1%3D%2260%22%20x2%3D%22372%22%20y2%3D%22228%22%2F%3E%3Cline%20x1%3D%22396%22%20y1%3D%2266%22%20x2%3D%22396%22%20y2%3D%22226%22%2F%3E%3Cline%20x1%3D%22420%22%20y1%3D%2272%22%20x2%3D%22420%22%20y2%3D%22224%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22rgba%28230%2C235%2C250%2C.1%29%22%3E%3Crect%20x%3D%22131%22%20y%3D%22168%22%20width%3D%221.6%22%20height%3D%2244%22%2F%3E%3Crect%20x%3D%22179%22%20y%3D%22168%22%20width%3D%221.6%22%20height%3D%2244%22%2F%3E%3Crect%20x%3D%22227%22%20y%3D%22168%22%20width%3D%221.6%22%20height%3D%2244%22%2F%3E%3Crect%20x%3D%22275%22%20y%3D%22168%22%20width%3D%221.6%22%20height%3D%2244%22%2F%3E%3Crect%20x%3D%22323%22%20y%3D%22168%22%20width%3D%221.6%22%20height%3D%2244%22%2F%3E%3Crect%20x%3D%22371%22%20y%3D%22168%22%20width%3D%221.6%22%20height%3D%2244%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22M80%20218%20L90%20168%20H136%20V146%20H196%20V152%20H238%20V132%20H272%20V152%20H306%20V126%20H338%20V168%20H392%20L402%20218%22%20fill%3D%22none%22%20stroke%3D%22rgba%28214%2C84%2C74%2C.4%29%22%20stroke-width%3D%221.6%22%2F%3E%3Cg%20fill%3D%22rgba%28255%2C200%2C130%2C.55%29%22%3E%3Crect%20x%3D%22150%22%20y%3D%22153%22%20width%3D%226%22%20height%3D%224%22%2F%3E%3Crect%20x%3D%22162%22%20y%3D%22153%22%20width%3D%226%22%20height%3D%224%22%2F%3E%3Crect%20x%3D%22174%22%20y%3D%22153%22%20width%3D%226%22%20height%3D%224%22%2F%3E%3Crect%20x%3D%22186%22%20y%3D%22153%22%20width%3D%226%22%20height%3D%224%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+  --x-grain:.45;
 }
 #ebook-converter-demo *{ box-sizing: border-box; }
 #ebook-converter-demo .x-sr{
@@ -75,7 +75,10 @@
 #ebook-converter-demo .x-frame{
   position: relative;
   background-color: var(--x-paper);
-  background-image: var(--x-texture);
+  background-image: var(--x-texture), var(--x-scene);
+  background-size: auto, cover;
+  background-position: left top, center bottom;
+  background-repeat: repeat, no-repeat;
   border: 1px solid var(--x-line);
   border-radius: 14px;
   overflow: hidden;
@@ -234,6 +237,7 @@
 #ebook-converter-demo .x-listtitle{ font-weight:600; }
 #ebook-converter-demo .x-empty{
   border:1px dashed var(--x-line); border-radius:10px;
+  background: var(--x-surface);
   padding:18px; text-align:center; color: var(--x-muted); font-size:13px;
 }
 #ebook-converter-demo .x-row{
@@ -402,7 +406,7 @@
     <div class="x-topright">
       <div class="x-themes" role="group" aria-label="颜色风格">
         <button type="button" class="x-theme cursor-interaction is-on" data-theme="night"><span class="x-swatch" style="background:#191512" aria-hidden="true"></span>夜读</button>
-        <button type="button" class="x-theme cursor-interaction" data-theme="kindle"><span class="x-swatch" style="background:#FBFBF7" aria-hidden="true"></span>Kindle</button>
+        <button type="button" class="x-theme cursor-interaction" data-theme="kindle"><span class="x-swatch" style="background:#A8A49B" aria-hidden="true"></span>Kindle</button>
         <button type="button" class="x-theme cursor-interaction" data-theme="santi"><span class="x-swatch" style="background:#0A0E17" aria-hidden="true"></span>三体</button>
       </div>
       <span class="x-cal" data-tooltip="C:\Program Files\Calibre2\ebook-convert.exe（演示数据）"><span class="x-dot" aria-hidden="true"></span>Calibre 已就绪</span>
