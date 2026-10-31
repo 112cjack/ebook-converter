@@ -26,12 +26,15 @@
 }
 #ebook-converter-demo[data-theme="kindle"]{
   color-scheme: light;
-  --x-paper:#FBFBF7; --x-surface:#FFFFFF; --x-dropbg:#F5F5EF;
-  --x-ink:#1B1B18; --x-muted:#6F6F68; --x-line:#E2E2DC;
+  --x-paper:#F1F2EE; --x-surface:rgba(255,255,255,.66); --x-dropbg:rgba(255,255,255,.5);
+  --x-ink:#1B1B18; --x-muted:#6F6F68; --x-line:rgba(27,27,24,.14);
   --x-accent:#1B1B18; --x-accentbg:#1B1B18; --x-onaccent:#FBFBF7;
-  --x-moss:#2F6640; --x-clay:#A63A2B; --x-track:#ECECE6;
-  --x-drophover:#EFEBE0;
-  --x-texture:none;
+  --x-moss:#2F6640; --x-clay:#A63A2B; --x-track:rgba(27,27,24,.1);
+  --x-drophover:rgba(255,255,255,.85);
+  --x-texture:
+    radial-gradient(60% 50% at 15% 8%, rgba(151,171,143,.22), transparent 62%),
+    radial-gradient(50% 45% at 88% 16%, rgba(196,181,158,.24), transparent 62%),
+    radial-gradient(70% 60% at 55% 96%, rgba(158,175,190,.2), transparent 65%);
 }
 #ebook-converter-demo[data-theme="santi"]{
   color-scheme: dark;
@@ -41,12 +44,14 @@
   --x-moss:#7FB08E; --x-clay:#E08579; --x-track:#1D2536;
   --x-drophover:#16203A;
   --x-texture:
-    radial-gradient(1px 1px at 18% 22%, rgba(215,223,239,.45) 50%, transparent 51%),
-    radial-gradient(1px 1px at 72% 10%, rgba(215,223,239,.35) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 86% 62%, rgba(214,84,74,.4) 50%, transparent 51%),
-    radial-gradient(1px 1px at 38% 80%, rgba(215,223,239,.3) 50%, transparent 51%),
-    radial-gradient(1px 1px at 58% 40%, rgba(215,223,239,.28) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 8% 56%, rgba(215,223,239,.28) 50%, transparent 51%);
+    repeating-linear-gradient(0deg, rgba(215,223,239,.026) 0 1px, transparent 1px 3px),
+    radial-gradient(1px 1px at 18% 22%, rgba(215,223,239,.5) 50%, transparent 51%),
+    radial-gradient(1px 1px at 72% 10%, rgba(215,223,239,.4) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 86% 62%, rgba(214,84,74,.45) 50%, transparent 51%),
+    radial-gradient(1px 1px at 38% 80%, rgba(215,223,239,.32) 50%, transparent 51%),
+    radial-gradient(1px 1px at 58% 40%, rgba(215,223,239,.3) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 8% 56%, rgba(215,223,239,.3) 50%, transparent 51%),
+    radial-gradient(70% 45% at 80% -10%, rgba(214,84,74,.14), transparent 65%);
 }
 #ebook-converter-demo *{ box-sizing: border-box; }
 #ebook-converter-demo .x-sr{
@@ -96,6 +101,66 @@
   box-shadow: inset 0 0 0 1px var(--x-accent);
 }
 #ebook-converter-demo .x-swatch{ width:12px; height:12px; border-radius:50%; border:1px solid var(--x-line); flex:none; }
+
+/* ── 品牌标识：方章 + 双向转换箭头 + 书脊折痕 ── */
+#ebook-converter-demo .x-seal{
+  display:flex; align-items:center; justify-content:center;
+  background-image: linear-gradient(90deg, rgba(255,255,255,0) 45%, rgba(0,0,0,.22) 50%, rgba(255,255,255,0) 55%);
+}
+#ebook-converter-demo .x-seal svg{ width:19px; height:19px; display:block; }
+
+/* ── Kindle · 悬浮毛玻璃 ── */
+#ebook-converter-demo[data-theme="kindle"] .x-frame{
+  border-radius:18px; border-color:rgba(27,27,24,.1);
+  box-shadow:0 18px 44px rgba(96,106,96,.22);
+}
+#ebook-converter-demo[data-theme="kindle"] :is(.x-top,.x-row,.x-drop,.x-action,.x-dlg,.x-toast){
+  backdrop-filter:blur(14px) saturate(1.15);
+  -webkit-backdrop-filter:blur(14px) saturate(1.15);
+}
+#ebook-converter-demo[data-theme="kindle"] .x-row{ border-color:rgba(27,27,24,.1); }
+#ebook-converter-demo[data-theme="kindle"] .x-primary{ border-radius:10px; }
+
+/* ── 三体 · 双栏控制台（HUD）── */
+#ebook-converter-demo[data-theme="santi"] .x-frame{ border-radius:4px; }
+#ebook-converter-demo[data-theme="santi"] .x-frame::before,
+#ebook-converter-demo[data-theme="santi"] .x-frame::after{
+  content:""; position:absolute; width:22px; height:22px; pointer-events:none; z-index:5;
+}
+#ebook-converter-demo[data-theme="santi"] .x-frame::before{ top:6px; left:6px; border-top:2px solid var(--x-accent); border-left:2px solid var(--x-accent); }
+#ebook-converter-demo[data-theme="santi"] .x-frame::after{ bottom:6px; right:6px; border-bottom:2px solid var(--x-accent); border-right:2px solid var(--x-accent); }
+#ebook-converter-demo[data-theme="santi"] .x-top{ border-bottom:1px solid var(--x-accent); }
+#ebook-converter-demo[data-theme="santi"] .x-title{ font-family:var(--x-mono); letter-spacing:6px; font-size:16px; }
+#ebook-converter-demo[data-theme="santi"] .x-sub{ font-family:var(--x-mono); letter-spacing:1px; }
+#ebook-converter-demo[data-theme="santi"] .x-main{
+  display:grid; grid-template-columns:minmax(210px,280px) 1fr; gap:12px 16px; align-items:start;
+}
+#ebook-converter-demo[data-theme="santi"] .x-drop{
+  grid-column:1; grid-row:1 / span 3; min-height:320px;
+  display:flex; flex-direction:column; justify-content:center;
+  border-style:solid; border-color:var(--x-accent); border-width:1px;
+  box-shadow:inset 0 0 0 1px rgba(214,84,74,.16), inset 0 0 30px rgba(214,84,74,.07);
+}
+#ebook-converter-demo[data-theme="santi"] .x-listhead,
+#ebook-converter-demo[data-theme="santi"] #x-list,
+#ebook-converter-demo[data-theme="santi"] .x-empty{ grid-column:2; }
+#ebook-converter-demo[data-theme="santi"] .x-listtitle::after{ content:" / QUEUE"; font-family:var(--x-mono); font-size:11px; color:var(--x-muted); }
+#ebook-converter-demo[data-theme="santi"] .x-row{
+  border-radius:2px;
+  clip-path:polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+  background:linear-gradient(180deg, rgba(214,84,74,.06), rgba(214,84,74,0) 40%), var(--x-surface);
+}
+#ebook-converter-demo[data-theme="santi"] .x-name{ font-family:var(--x-mono); font-weight:700; letter-spacing:.5px; }
+#ebook-converter-demo[data-theme="santi"] .x-fmts{ font-family:var(--x-mono); letter-spacing:1px; }
+#ebook-converter-demo[data-theme="santi"] .x-dropicon{ color:var(--x-accent); }
+#ebook-converter-demo[data-theme="santi"] .x-pfill{ box-shadow:0 0 8px rgba(214,84,74,.55); }
+#ebook-converter-demo[data-theme="santi"] .x-ofill{ box-shadow:0 0 8px rgba(214,84,74,.45); }
+#ebook-converter-demo[data-theme="santi"] .x-primary{ border-radius:2px; letter-spacing:3px; }
+#ebook-converter-demo[data-theme="santi"] .x-go, #ebook-converter-demo[data-theme="santi"] .x-segbtn{ border-radius:2px; }
+@media (max-width:840px){
+  #ebook-converter-demo[data-theme="santi"] .x-main{ display:block; }
+  #ebook-converter-demo[data-theme="santi"] .x-drop{ min-height:0; }
+}
 /* ── buttons ── */
 #ebook-converter-demo .x-btn{
   display:inline-flex; align-items:center; justify-content:center; gap:6px;
@@ -298,9 +363,14 @@
 <div class="x-frame">
   <header class="x-top">
     <div class="x-brand">
-      <span class="x-seal" aria-hidden="true">转</span>
+      <span class="x-seal" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 8h12"/><path d="M13 4.5 16.5 8 13 11.5"/>
+          <path d="M20 16H8"/><path d="M11 12.5 7.5 16l3.5 3.5"/>
+        </svg>
+      </span>
       <div>
-        <div class="x-title">电子书转换器</div>
+        <div class="x-title">书渡</div>
         <div class="x-sub">本地转换 · 文件不出电脑</div>
       </div>
     </div>
