@@ -12,21 +12,41 @@
 <div id="ebook-converter-demo">
 <style>
 #ebook-converter-demo{
-  color-scheme: light dark;
-  --x-paper: light-dark(#F5F3EE, #1B1D21);
-  --x-surface: light-dark(#FCFBF8, #24272C);
-  --x-dropbg: light-dark(#FAF8F3, #202328);
-  --x-ink: light-dark(#26221D, #E9E5DC);
-  --x-muted: light-dark(#6E6A60, #A6A196);
-  --x-line: light-dark(#E3DFD5, #3A3E44);
-  --x-seal: light-dark(#B3342B, #E07B62);
-  --x-sealbg: light-dark(#B3342B, #B84A38);
-  --x-moss: light-dark(#3E6B4F, #7FB08E);
-  --x-clay: light-dark(#9E3B2F, #D97B66);
+  color-scheme: dark;
+  --x-paper:#191512; --x-surface:#221D16; --x-dropbg:#1E1913;
+  --x-ink:#EAE0CB; --x-muted:#9C9078; --x-line:#3A3327;
+  --x-accent:#D9A441; --x-accentbg:#C89138; --x-onaccent:#221C10;
+  --x-moss:#93AF87; --x-clay:#D98B72; --x-track:#322C22;
+  --x-drophover:#2A241C;
+  --x-texture: repeating-linear-gradient(0deg, rgba(234,224,203,.03) 0 1px, transparent 1px 4px);
   --x-serif: Georgia, "Songti SC", "SimSun", serif;
   --x-mono: Consolas, "Courier New", monospace;
   font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
   font-size: 14px; line-height: 1.55; color: var(--x-ink);
+}
+#ebook-converter-demo[data-theme="kindle"]{
+  color-scheme: light;
+  --x-paper:#FBFBF7; --x-surface:#FFFFFF; --x-dropbg:#F5F5EF;
+  --x-ink:#1B1B18; --x-muted:#6F6F68; --x-line:#E2E2DC;
+  --x-accent:#1B1B18; --x-accentbg:#1B1B18; --x-onaccent:#FBFBF7;
+  --x-moss:#2F6640; --x-clay:#A63A2B; --x-track:#ECECE6;
+  --x-drophover:#EFEBE0;
+  --x-texture:none;
+}
+#ebook-converter-demo[data-theme="santi"]{
+  color-scheme: dark;
+  --x-paper:#0A0E17; --x-surface:#111726; --x-dropbg:#0D1320;
+  --x-ink:#D7DFEF; --x-muted:#7E8AA8; --x-line:#222C44;
+  --x-accent:#D6544A; --x-accentbg:#C24940; --x-onaccent:#FFFFFF;
+  --x-moss:#7FB08E; --x-clay:#E08579; --x-track:#1D2536;
+  --x-drophover:#16203A;
+  --x-texture:
+    radial-gradient(1px 1px at 18% 22%, rgba(215,223,239,.45) 50%, transparent 51%),
+    radial-gradient(1px 1px at 72% 10%, rgba(215,223,239,.35) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 86% 62%, rgba(214,84,74,.4) 50%, transparent 51%),
+    radial-gradient(1px 1px at 38% 80%, rgba(215,223,239,.3) 50%, transparent 51%),
+    radial-gradient(1px 1px at 58% 40%, rgba(215,223,239,.28) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 8% 56%, rgba(215,223,239,.28) 50%, transparent 51%);
 }
 #ebook-converter-demo *{ box-sizing: border-box; }
 #ebook-converter-demo .x-sr{
@@ -35,7 +55,8 @@
 }
 #ebook-converter-demo .x-frame{
   position: relative;
-  background: var(--x-paper);
+  background-color: var(--x-paper);
+  background-image: var(--x-texture);
   border: 1px solid var(--x-line);
   border-radius: 14px;
   overflow: hidden;
@@ -49,7 +70,7 @@
 #ebook-converter-demo .x-brand{ display:flex; align-items:center; gap:12px; min-width:0; }
 #ebook-converter-demo .x-seal{
   width:34px; height:34px; flex:none; border-radius:7px;
-  background: var(--x-sealbg); color:#fff;
+  background: var(--x-accentbg); color: var(--x-onaccent);
   font-family: var(--x-serif); font-size:19px; font-weight:700;
   display:flex; align-items:center; justify-content:center;
 }
@@ -63,6 +84,18 @@
   background: var(--x-paper); cursor: help;
 }
 #ebook-converter-demo .x-dot{ width:8px; height:8px; border-radius:50%; background: var(--x-moss); }
+#ebook-converter-demo .x-themes{ display:inline-flex; gap:4px; align-items:center; margin-right:6px; }
+#ebook-converter-demo .x-theme{
+  display:inline-flex; align-items:center; gap:6px; font:inherit; font-size:12px;
+  color:var(--x-muted); background:transparent; border:1px solid transparent; border-radius:999px;
+  padding:4px 10px; min-height:28px;
+}
+#ebook-converter-demo .x-theme:hover{ color:var(--x-ink); border-color:var(--x-line); }
+#ebook-converter-demo .x-theme.is-on{
+  color:var(--x-ink); border-color:var(--x-line); background:var(--x-surface);
+  box-shadow: inset 0 0 0 1px var(--x-accent);
+}
+#ebook-converter-demo .x-swatch{ width:12px; height:12px; border-radius:50%; border:1px solid var(--x-line); flex:none; }
 /* ── buttons ── */
 #ebook-converter-demo .x-btn{
   display:inline-flex; align-items:center; justify-content:center; gap:6px;
@@ -72,14 +105,13 @@
 }
 #ebook-converter-demo .x-btn:hover{ border-color: var(--x-muted); }
 #ebook-converter-demo .x-linkbtn{
-  font: inherit; font-size:13px; color: var(--x-seal);
+  font: inherit; font-size:13px; color: var(--x-accent);
   background:none; border:none; padding:6px 4px; text-decoration: underline;
   text-underline-offset: 3px;
 }
 #ebook-converter-demo .x-primary{
-  font: inherit; font-size:14px; font-weight:600; color:#fff;
-  background: light-dark(#26221D, #E9E5DC);
-  color: light-dark(#FFFFFF, #1B1D21);
+  font: inherit; font-size:14px; font-weight:600;
+  background: var(--x-accentbg); color: var(--x-onaccent);
   border:none; border-radius:9px; padding: 10px 22px; min-height:42px;
 }
 #ebook-converter-demo .x-primary:hover{ filter: brightness(1.12); }
@@ -98,7 +130,7 @@
   padding: 26px 16px 22px; text-align:center;
   transition: border-color .2s ease-out, background .2s ease-out;
 }
-#ebook-converter-demo .x-drop.is-over{ border-color: var(--x-seal); background: light-dark(#F3E9E4, #2A2624); }
+#ebook-converter-demo .x-drop.is-over{ border-color: var(--x-accent); background: var(--x-drophover); }
 #ebook-converter-demo .x-dropicon{ width:30px; height:30px; color: var(--x-muted); }
 #ebook-converter-demo .x-droptitle{ font-size:15px; font-weight:600; margin-top:8px; }
 #ebook-converter-demo .x-dropsub{ font-size:12px; color: var(--x-muted); margin: 2px 0 8px; }
@@ -132,7 +164,7 @@
   padding: 2px 8px; border-radius:6px; font-weight:600; letter-spacing:.4px;
   border:1px solid var(--x-line); color: var(--x-muted); background: var(--x-paper);
 }
-#ebook-converter-demo .x-chip-to{ border-color: var(--x-seal); color: var(--x-seal); background: transparent; }
+#ebook-converter-demo .x-chip-to{ border-color: var(--x-accent); color: var(--x-accent); background: transparent; }
 #ebook-converter-demo .x-status{ display:flex; align-items:center; gap:9px; min-width:0; font-size:13px; }
 #ebook-converter-demo .x-badge{
   font-size:12px; color: var(--x-muted);
@@ -141,16 +173,16 @@
 #ebook-converter-demo .x-prow{ display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
 #ebook-converter-demo .x-pbar{
   flex:1; height:6px; min-width:70px; border-radius:999px;
-  background: light-dark(#ECE8DE, #33373D);
+  background: var(--x-track);
 }
 #ebook-converter-demo .x-pfill{
-  height:100%; border-radius:999px; background: var(--x-sealbg);
+  height:100%; border-radius:999px; background: var(--x-accentbg);
   transition: width .15s linear;
 }
 #ebook-converter-demo .x-ptext{ font-size:12px; color: var(--x-muted); font-family: var(--x-mono); width:38px; text-align:right; }
 #ebook-converter-demo .x-stamp{
   width:22px; height:22px; flex:none; border-radius:6px;
-  background: var(--x-sealbg); color:#fff;
+  background: var(--x-accentbg); color: var(--x-onaccent);
   display:inline-flex; align-items:center; justify-content:center;
 }
 #ebook-converter-demo .x-stamp svg{ width:14px; height:14px; }
@@ -185,8 +217,8 @@
   padding: 8px 16px; min-height:38px;
 }
 #ebook-converter-demo .x-segbtn[aria-pressed="true"]{
-  border-color: var(--x-seal); color: var(--x-seal);
-  box-shadow: inset 0 0 0 1px var(--x-seal);
+  border-color: var(--x-accent); color: var(--x-accent);
+  box-shadow: inset 0 0 0 1px var(--x-accent);
 }
 #ebook-converter-demo .x-segbtn:disabled{ opacity:.45; cursor:not-allowed; }
 #ebook-converter-demo .x-helper{ font-size:12px; color: var(--x-muted); min-height:18px; }
@@ -194,9 +226,9 @@
 #ebook-converter-demo .x-oprog{ display:flex; align-items:center; gap:8px; }
 #ebook-converter-demo .x-obar{
   width:130px; height:6px; border-radius:999px;
-  background: light-dark(#ECE8DE, #33373D);
+  background: var(--x-track);
 }
-#ebook-converter-demo .x-ofill{ height:100%; border-radius:999px; background: var(--x-sealbg); transition: width .2s ease-out; }
+#ebook-converter-demo .x-ofill{ height:100%; border-radius:999px; background: var(--x-accentbg); transition: width .2s ease-out; }
 #ebook-converter-demo .x-otext{ font-size:12px; color: var(--x-muted); font-family: var(--x-mono); }
 #ebook-converter-demo .x-note{
   padding: 0 max(20px, calc((100% - 980px) / 2)) 14px; font-size:12px; color: var(--x-muted);
@@ -273,6 +305,11 @@
       </div>
     </div>
     <div class="x-topright">
+      <div class="x-themes" role="group" aria-label="颜色风格">
+        <button type="button" class="x-theme cursor-interaction is-on" data-theme="night"><span class="x-swatch" style="background:#191512" aria-hidden="true"></span>夜读</button>
+        <button type="button" class="x-theme cursor-interaction" data-theme="kindle"><span class="x-swatch" style="background:#FBFBF7" aria-hidden="true"></span>Kindle</button>
+        <button type="button" class="x-theme cursor-interaction" data-theme="santi"><span class="x-swatch" style="background:#0A0E17" aria-hidden="true"></span>三体</button>
+      </div>
       <span class="x-cal" data-tooltip="C:\Program Files\Calibre2\ebook-convert.exe（演示数据）"><span class="x-dot" aria-hidden="true"></span>Calibre 已就绪</span>
       <button class="x-btn cursor-interaction" id="x-histbtn" type="button"><i data-lucide="history" aria-hidden="true"></i>历史</button>
       <button class="x-btn cursor-interaction" id="x-setbtn" type="button"><i data-lucide="settings" aria-hidden="true"></i>设置</button>
@@ -721,6 +758,26 @@
   $("x-histbtn").addEventListener("click", openHistory);
   $("x-histclose").addEventListener("click", function(){ histDlg.close(); });
   $("x-histok").addEventListener("click", function(){ histDlg.close(); });
+
+  // ── 颜色风格切换（夜读 / Kindle / 三体）──
+  var THEME_KEY = "ebookDemoTheme";
+  function applyTheme(name){
+    if(["night","kindle","santi"].indexOf(name) < 0) name = "night";
+    root.setAttribute("data-theme", name);
+    Array.prototype.forEach.call(root.querySelectorAll(".x-theme"), function(b){
+      b.classList.toggle("is-on", b.getAttribute("data-theme") === name);
+    });
+    try{ localStorage.setItem(THEME_KEY, name); }catch(e){}
+  }
+  Array.prototype.forEach.call(root.querySelectorAll(".x-theme"), function(b){
+    b.addEventListener("click", function(){
+      applyTheme(b.getAttribute("data-theme"));
+      toast("已切换风格：" + b.textContent.trim(), "info");
+    });
+  });
+  var savedTheme = null;
+  try{ savedTheme = localStorage.getItem(THEME_KEY); }catch(e){}
+  applyTheme(savedTheme || "night");
 
   render();
   icons();
