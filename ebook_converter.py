@@ -20,6 +20,7 @@ import shutil
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 
 # Calibre 官方支持的输入格式（https://manual.calibre-ebook.com/conversion.html）
@@ -144,12 +145,14 @@ def _drain(stream, chunks, on_progress):
         pass  # 管道随子进程关闭产生的读写异常不影响结果判定
 
 
-def convert_file(engine, src, dst, on_progress=None):
+def convert_file(engine, src, dst, on_progress=None, cancel_check=None):
     """转换单个文件，返回 (status, message)。
 
     status 取值：ok / failed / skipped。任何情况下都不改动源文件；
     失败（含超时、Ctrl+C 中断）时清理已产生的残缺输出。
-    on_progress(pct) 可选：转换过程中收到引擎 stderr 解析出的百分比（0~100）。
+    on_progress(pct) 可选：转换过程中收到引擎 stdout 解析出的百分比（0~100）。
+    cancel_check() 可选（仅流式路径生效）：每至多 1 秒被询问一次，返回 True
+    时终止子进程、清理残缺输出并返回 (STATUS_FAILED, "已取消")。
     """
     src, dst = Path(src), Path(dst)
     if dst.exists():
@@ -185,12 +188,22 @@ def convert_file(engine, src, dst, on_progress=None):
             ]
             for reader in readers:
                 reader.start()
-            try:
-                proc.wait(timeout=CONVERT_TIMEOUT_SECONDS)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-                proc.wait()
-                return _fail(dst, "转换超时")
+            # 分段 wait 以便轮询取消请求；总时长仍受转换超时上限约束
+            deadline = time.time() + CONVERT_TIMEOUT_SECONDS
+            while True:
+                remaining = deadline - time.time()
+                if remaining <= 0:
+                    proc.kill()
+                    proc.wait()
+                    return _fail(dst, "转换超时")
+                try:
+                    proc.wait(timeout=min(1.0, remaining))
+                    break
+                except subprocess.TimeoutExpired:
+                    if cancel_check is not None and cancel_check():
+                        proc.kill()
+                        proc.wait()
+                        return _fail(dst, "已取消")
             for reader in readers:
                 reader.join(timeout=5)
             stderr = "".join(err_chunks)

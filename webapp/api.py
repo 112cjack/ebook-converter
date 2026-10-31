@@ -6,7 +6,9 @@
 的就近扩展，已在技术方案文档补记）。
 """
 
+import logging
 import os
+import string
 import subprocess
 import sys
 import time
@@ -19,6 +21,8 @@ from . import settings as settings_mod
 from . import tasks as tasks_mod
 
 bp = Blueprint("api", __name__)
+
+log = logging.getLogger("ebook-converter")
 
 
 def _manager():
@@ -78,6 +82,8 @@ def public_upload(record):
         "size": record["size"],
         "format": record["format"],
         "removed": record["removed"],
+        "truncated": record.get("truncated", False),
+        "scanned_pdf": record.get("scanned_pdf", False),
     }
 
 
@@ -173,7 +179,8 @@ def convert():
     manager.registered_dirs.add(str(out_dir.resolve()))
 
     try:
-        created = manager.create_tasks(ids, fmt, out_dir)
+        created = manager.create_tasks(ids, fmt, out_dir,
+                                       overwrite=bool(body.get("overwrite")))
     except ec.EngineNotFoundError as exc:
         return jsonify({"error": str(exc), "engine": engine_state()}), 409
     except ValueError as exc:
@@ -192,6 +199,52 @@ def list_tasks():
         "tasks": [public_task(t) for t in tasks],
         "now": time.time(),
     })
+
+
+@bp.post("/api/cancel")
+def cancel_task():
+    """取消一个转换中的任务（worker 在引擎子进程的轮询点终止它）。"""
+    body = request.get_json(silent=True) or {}
+    task_id = str(body.get("task_id") or "")
+    if not task_id or not _manager().request_cancel(task_id):
+        return jsonify({"error": "任务不存在或不在转换中"}), 400
+    return jsonify({"ok": True})
+
+
+def list_drives():
+    """本机可用盘符（Windows）；其他平台返回根目录。"""
+    if sys.platform == "win32":
+        return [f"{c}" for c in string.ascii_uppercase if Path(f"{c}:/").exists()]
+    return ["/"]
+
+
+@bp.get("/api/browse")
+def browse():
+    """输出目录浏览器数据源：path 为空返回盘符列表，否则返回该目录下的子目录。"""
+    raw = str(request.args.get("path") or "").strip()
+    if not raw:
+        suffix = "\\" if sys.platform == "win32" else ""
+        return jsonify({
+            "current": None,
+            "parent": None,
+            "entries": [{"name": drive, "path": drive + suffix} for drive in list_drives()],
+        })
+    path = Path(raw)
+    if not path.is_absolute():
+        return jsonify({"error": "路径必须是绝对路径"}), 400
+    if not path.is_dir():
+        return jsonify({"error": "目录不存在"}), 400
+    entries = []
+    try:
+        for child in sorted(path.iterdir(), key=lambda item: item.name.lower()):
+            if child.name.startswith((".", "$")):
+                continue
+            if child.is_dir():
+                entries.append({"name": child.name, "path": str(child)})
+    except OSError as exc:
+        return jsonify({"error": f"无法读取目录: {exc}"}), 400
+    parent = str(path.parent) if path.parent != path else None
+    return jsonify({"current": str(path), "parent": parent, "entries": entries})
 
 
 @bp.post("/api/remove")
@@ -284,4 +337,6 @@ def post_settings():
     manager = _manager()
     if data["output_dir"]:
         manager.registered_dirs.add(str(Path(data["output_dir"]).resolve()))
+    log.info("设置已保存：输出目录=%r 引擎路径=%r 上传上限=%dMB",
+             data["output_dir"], data["engine_path"], data["upload_limit_mb"])
     return jsonify({**public_settings(data), "engine": engine_state()})

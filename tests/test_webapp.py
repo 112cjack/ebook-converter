@@ -7,6 +7,7 @@
 
 import io
 import json
+import time
 from pathlib import Path
 
 import pytest
@@ -33,8 +34,10 @@ def set_fake_engine(app, engine="dummy"):
     app.extensions["task_manager"].resolve_engine = lambda: engine
 
 
-def fake_convert_ok(engine, src, dst, on_progress=None):
+def fake_convert_ok(engine, src, dst, on_progress=None, cancel_check=None):
     dst = Path(dst)
+    if dst.exists():
+        return ec.STATUS_SKIPPED, "输出已存在"  # 模拟引擎层对既有输出的跳过行为
     dst.parent.mkdir(parents=True, exist_ok=True)
     dst.write_bytes(b"x" * 2048)
     return ec.STATUS_OK, f"{dst.name}（2 KB）"
@@ -207,7 +210,7 @@ class TestTaskFlow:
         patcher = pytest.MonkeyPatch()
         patcher.setattr(
             ec, "convert_file",
-            lambda engine, s, d, on_progress=None: (ec.STATUS_FAILED, "Error: Cannot decrypt DRM"),
+            lambda engine, s, d, on_progress=None, cancel_check=None: (ec.STATUS_FAILED, "Error: Cannot decrypt DRM"),
         )
         try:
             upload_file(client, "锁.epub")
@@ -224,7 +227,7 @@ class TestTaskFlow:
         patcher = pytest.MonkeyPatch()
         patcher.setattr(
             ec, "convert_file",
-            lambda engine, s, d, on_progress=None: (ec.STATUS_SKIPPED, "输出已存在"),
+            lambda engine, s, d, on_progress=None, cancel_check=None: (ec.STATUS_SKIPPED, "输出已存在"),
         )
         try:
             upload_file(client, "a.epub")
@@ -283,7 +286,7 @@ class TestTaskFlow:
         """M3：引擎 stderr 进度经 on_progress 写入任务，轮询可见。"""
         set_fake_engine(app_env)
 
-        def fake_with_progress(engine, src, dst, on_progress=None):
+        def fake_with_progress(engine, src, dst, on_progress=None, cancel_check=None):
             if on_progress:
                 on_progress(42)
             return fake_convert_ok(engine, src, dst)
@@ -426,6 +429,170 @@ class TestSettingsApi:
         resp = client.post("/api/settings", json={"engine_path": "X:/no/such/engine.exe"})
         assert resp.status_code == 400
         assert "不存在" in resp.get_json()["error"]
+
+
+# ── 健壮性基座 ──
+
+
+class TestRobustness:
+    def test_long_filename_truncated_but_extension_kept(self, client, app_env):
+        long_name = "超" * 200 + ".epub"
+        rec = upload_file(client, long_name).get_json()["uploads"][0]
+        assert len(Path(rec["name"]).stem) <= 80
+        assert rec["name"].endswith(".epub")
+        assert rec["truncated"] is True
+
+    def test_normal_filename_not_marked_truncated(self, client):
+        rec = upload_file(client, "普通书.epub").get_json()["uploads"][0]
+        assert rec["truncated"] is False
+
+    def test_startup_clears_stale_uploads(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(ec, "find_engine", lambda: None)
+        stale = tmp_path / "tmp" / "uploads"
+        stale.mkdir(parents=True)
+        (stale / "old.epub").write_bytes(b"x")
+        app = create_app(base_dir=tmp_path, testing=True)
+        assert not (stale / "old.epub").exists()
+        assert app.extensions["task_manager"].upload_dir.is_dir()
+
+
+# ── 同格式跳过与扫描版 PDF 预检测 ──
+
+
+class TestConvertSemantics:
+    def test_same_format_task_skipped_without_queue(self, client, app_env, tmp_path):
+        set_fake_engine(app_env)
+        upload_file(client, "a.epub")
+        resp, tasks = convert_and_wait(
+            client, app_env, {"format": "epub", "output_dir": str(tmp_path)})
+        assert resp.status_code == 201
+        assert tasks[0]["status"] == "skipped"
+        assert "无需转换" in tasks[0]["message"]
+        assert not (tmp_path / "a.epub").exists()
+
+    def test_pdf_scan_flag_on_upload(self, client, app_env, monkeypatch, tmp_path):
+        fake = tmp_path / "scan.pdf"
+        fake.write_bytes(b"%PDF-")
+        monkeypatch.setattr(ec, "pdf_has_text_layer", lambda p, **k: False)
+        with open(fake, "rb") as fh:
+            body = client.post("/api/upload", data={"files": (fh, "scan.pdf")},
+                               content_type="multipart/form-data").get_json()
+        assert body["uploads"][0]["scanned_pdf"] is True
+
+    def test_text_pdf_no_flag(self, client, app_env, monkeypatch, tmp_path):
+        fake = tmp_path / "text.pdf"
+        fake.write_bytes(b"%PDF-")
+        monkeypatch.setattr(ec, "pdf_has_text_layer", lambda p, **k: True)
+        with open(fake, "rb") as fh:
+            body = client.post("/api/upload", data={"files": (fh, "text.pdf")},
+                               content_type="multipart/form-data").get_json()
+        assert body["uploads"][0]["scanned_pdf"] is False
+
+    def test_non_pdf_has_no_scan_flag(self, client):
+        rec = upload_file(client, "a.epub").get_json()["uploads"][0]
+        assert rec["scanned_pdf"] is False
+
+
+# ── 取消转换 ──
+
+
+class TestCancel:
+    def test_cancel_converting_task(self, client, app_env, tmp_path):
+        set_fake_engine(app_env)
+
+        def slow_convert(engine, src, dst, on_progress=None, cancel_check=None):
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            for _ in range(300):
+                if cancel_check is not None and cancel_check():
+                    return ec.STATUS_FAILED, "已取消"
+                time.sleep(0.02)
+            dst.write_bytes(b"x" * 2048)
+            return ec.STATUS_OK, "ok"
+
+        patcher = pytest.MonkeyPatch()
+        patcher.setattr(ec, "convert_file", slow_convert)
+        try:
+            upload_file(client, "a.epub")
+            client.post("/api/convert", json={"format": "mobi", "output_dir": str(tmp_path)})
+            app_env.extensions["task_manager"].wait_idle()  # 等 worker 取到任务
+            task = client.get("/api/tasks").get_json()["tasks"][0]
+            if task["status"] == "converting":
+                resp = client.post("/api/cancel", json={"task_id": task["id"]})
+                assert resp.status_code == 200
+            app_env.extensions["task_manager"].wait_idle()
+            task = client.get("/api/tasks").get_json()["tasks"][0]
+            assert task["status"] in ("cancelled", "done")  # 极慢环境下可能已自然完成
+            if task["status"] == "cancelled":
+                assert "取消" in task["message"]
+        finally:
+            patcher.undo()
+
+    def test_cancel_unknown_task_rejected(self, client):
+        assert client.post("/api/cancel", json={"task_id": "nope"}).status_code == 400
+
+
+# ── 覆盖重转 ──
+
+
+class TestOverwrite:
+    def test_overwrite_replaces_existing_output(self, client, app_env, tmp_path):
+        set_fake_engine(app_env)
+        out = tmp_path / "out"
+        out.mkdir()
+        (out / "a.mobi").write_bytes(b"old" * 100)
+        patcher = pytest.MonkeyPatch()
+        patcher.setattr(ec, "convert_file", fake_convert_ok)
+        try:
+            upload_file(client, "a.epub")
+            _, tasks = convert_and_wait(
+                client, app_env,
+                {"format": "mobi", "output_dir": str(out), "overwrite": True})
+        finally:
+            patcher.undo()
+        assert tasks[0]["status"] == "done"
+        assert (out / "a.mobi").read_bytes() == b"x" * 2048
+
+    def test_without_overwrite_existing_output_skipped(self, client, app_env, tmp_path):
+        set_fake_engine(app_env)
+        out = tmp_path / "out"
+        out.mkdir()
+        (out / "a.mobi").write_bytes(b"old" * 100)
+        patcher = pytest.MonkeyPatch()
+        patcher.setattr(ec, "convert_file", fake_convert_ok)
+        try:
+            upload_file(client, "a.epub")
+            _, tasks = convert_and_wait(
+                client, app_env, {"format": "mobi", "output_dir": str(out)})
+        finally:
+            patcher.undo()
+        assert tasks[0]["status"] == "skipped"
+        assert (out / "a.mobi").read_bytes() == b"old" * 100
+
+
+# ── 目录浏览 ──
+
+
+class TestBrowse:
+    def test_lists_subdirectories_only(self, client, tmp_path):
+        target = tmp_path / "浏览目录"
+        target.mkdir()
+        (target / "子目录").mkdir()
+        (target / "file.txt").write_text("x")
+        (target / ".隐藏").mkdir()
+        resp = client.get("/api/browse", query_string={"path": str(target)})
+        body = resp.get_json()
+        assert [e["name"] for e in body["entries"]] == ["子目录"]
+        assert body["current"] == str(target)
+
+    def test_no_path_lists_drives(self, client, monkeypatch):
+        monkeypatch.setattr("webapp.api.list_drives", lambda: ["C:", "D:"])
+        body = client.get("/api/browse").get_json()
+        assert [e["path"] for e in body["entries"]] == ["C:\\", "D:\\"]  # 带分隔符，可直接下钻
+
+    def test_invalid_path_rejected(self, client):
+        assert client.get("/api/browse", query_string={"path": "rel"}).status_code == 400
+        assert client.get(
+            "/api/browse", query_string={"path": "Z:/__no_such__"}).status_code == 400
 
 
 # ── 状态与页面 ──

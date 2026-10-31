@@ -7,6 +7,7 @@
 ebook_converter.convert_file，本模块只做调度、重名判定与状态管理。
 """
 
+import logging
 import queue
 import threading
 import time
@@ -15,12 +16,15 @@ from pathlib import Path
 
 import ebook_converter as ec
 
-# 任务状态机：queued -> converting -> done / failed / skipped
+log = logging.getLogger("ebook-converter")
+
+# 任务状态机：queued -> converting -> done / failed / skipped / cancelled
 QUEUED = "queued"
 CONVERTING = "converting"
 DONE = "done"
 FAILED = "failed"
 SKIPPED = "skipped"
+CANCELLED = "cancelled"
 
 STATUS_LABEL = {
     QUEUED: "排队中",
@@ -28,17 +32,32 @@ STATUS_LABEL = {
     DONE: "已完成",
     FAILED: "失败",
     SKIPPED: "已跳过",
+    CANCELLED: "已取消",
 }
 
 # 引擎层与系统层错误 -> 通俗文案（引擎原始报错保留在 error_detail 供排查）
 FRIENDLY_ERROR = "文件可能已损坏或受版权保护（DRM），暂不支持转换"
 
 
+# 主名截断阈值：保证 tmp 路径 + 输出路径不超出 Windows MAX_PATH（260 字符）
+MAX_FILENAME_STEM = 80
+
+
 def safe_filename(name):
-    """清洗上传文件名：去掉路径成分与 Windows 非法字符，保留中文。"""
+    """清洗上传文件名：去路径成分与 Windows 非法字符，超长主名截断，保留中文与扩展名。
+
+    返回 (清洗后的名字, 是否发生了截断)。
+    """
     name = Path(str(name).replace("\\", "/")).name
     cleaned = "".join(ch for ch in name if ch.isprintable() and ch not in '<>:"|?*')
-    return cleaned.strip() or "未命名"
+    cleaned = cleaned.strip() or "未命名"
+    stem, dot, ext = cleaned.rpartition(".")
+    if dot and 0 < len(ext) <= 10:
+        if len(stem) > MAX_FILENAME_STEM:
+            return stem[:MAX_FILENAME_STEM] + dot + ext, True
+    elif len(cleaned) > MAX_FILENAME_STEM:
+        return cleaned[:MAX_FILENAME_STEM], True
+    return cleaned, False
 
 
 class TaskManager:
@@ -53,6 +72,7 @@ class TaskManager:
         self.registered_dirs = set()  # open-folder 只接受这里登记过的目录
         self._queue = queue.Queue()
         self._seen_dst = {}     # 运行期内 dst -> 来源文件名，用于重名提示
+        self._cancel_requests = set()  # 请求取消的任务 id（worker 通过 cancel_check 轮询）
         self._lock = threading.Lock()
         self.resolve_engine = engine_resolver or (lambda: ec.find_engine())
         worker = threading.Thread(target=self._work_loop, daemon=True, name="convert-worker")
@@ -65,15 +85,19 @@ class TaskManager:
         """保存上传文件到工作目录，返回上传记录。调用方已做扩展名白名单校验。"""
         ext = Path(filename).suffix.lower()
         self.upload_dir.mkdir(parents=True, exist_ok=True)
-        stored = uuid.uuid4().hex[:8] + "_" + safe_filename(filename)
-        (self.upload_dir / stored).write_bytes(data)
+        safe_name, truncated = safe_filename(filename)
+        stored = uuid.uuid4().hex[:8] + "_" + safe_name
+        stored_path = self.upload_dir / stored
+        stored_path.write_bytes(data)
         record = {
             "id": uuid.uuid4().hex[:12],
-            "name": safe_filename(filename),
+            "name": safe_name,
             "stored_name": stored,
             "size": len(data),
             "format": ext.lstrip("."),
             "removed": False,
+            "truncated": truncated,
+            "scanned_pdf": ext == ".pdf" and ec.pdf_has_text_layer(stored_path) is False,
         }
         with self._lock:
             self.uploads[record["id"]] = record
@@ -116,10 +140,12 @@ class TaskManager:
 
     # ── 任务创建 ──
 
-    def create_tasks(self, upload_ids, target_format, output_dir):
-        """为一组上传创建转换任务（queued）并入队，返回任务列表。
+    def create_tasks(self, upload_ids, target_format, output_dir, overwrite=False):
+        """为一组上传创建转换任务并入队，返回任务列表。
 
         target_format 必须在引擎层 OUTPUT_FORMATS 内；engine 未就绪时抛 EngineNotFoundError。
+        overwrite 为 True 时转换前删除已存在的同名输出（覆盖重转）；
+        源格式与目标格式相同的文件直接建 skipped 任务，不入队。
         """
         if target_format not in ec.OUTPUT_FORMATS:
             raise ValueError(f"不支持的输出格式: {target_format}")
@@ -134,6 +160,7 @@ class TaskManager:
                 record = self.uploads.get(uid)
                 if record is None or record["removed"]:
                     continue
+                now = time.time()
                 task = {
                     "id": uuid.uuid4().hex[:12],
                     "upload_id": uid,
@@ -148,15 +175,36 @@ class TaskManager:
                     "error_detail": None,
                     "output_path": str(out_dir / (Path(record["name"]).stem + "." + target_format)),
                     "output_dir": str(out_dir),
-                    "created_at": time.time(),
+                    "overwrite": overwrite,
+                    "created_at": now,
                     "started_at": None,
                     "finished_at": None,
                 }
+                if record["format"] == target_format:
+                    # 同格式转换对用户没有意义，直接标记跳过（设计文档 4 / C1）
+                    task["status"] = SKIPPED
+                    task["message"] = f"源文件已是 {target_format} 格式，无需转换"
+                    task["finished_at"] = now
                 self.tasks[task["id"]] = task
                 self.task_order.append(task["id"])
                 created.append(task)
-                self._queue.put(task["id"])
+                if task["status"] == QUEUED:
+                    self._queue.put(task["id"])
+        if created:
+            log.info("创建 %d 个转换任务（目标 %s -> %s，覆盖=%s）",
+                     len(created), "多文件" if len(created) > 1 else created[0]["name"],
+                     target_format, overwrite)
         return created
+
+    def request_cancel(self, task_id):
+        """请求取消一个转换中的任务；成功返回 True。"""
+        with self._lock:
+            task = self.tasks.get(task_id)
+            if task is None or task["status"] != CONVERTING:
+                return False
+            self._cancel_requests.add(task_id)
+            log.info("请求取消任务：%s", task["name"])
+            return True
 
     # ── worker ──
 
@@ -179,10 +227,12 @@ class TaskManager:
 
         dst = Path(task["output_path"])
         prior = self._seen_dst.get(dst)
-        if prior is not None:
+        if prior is not None and prior != task["name"]:
             self._finish(task_id, SKIPPED, message=f"输出与 {prior} 重名")
             return
         self._seen_dst[dst] = task["name"]
+        if task.get("overwrite") and dst.exists():
+            dst.unlink(missing_ok=True)  # 覆盖重转：清掉旧输出再转
 
         warning = ""
         if task["format_in"] == "pdf" and task["format_out"] != "pdf":
@@ -197,9 +247,12 @@ class TaskManager:
         def on_progress(pct):
             task["progress"] = max(0, min(100, int(pct)))
 
+        cancel_check = lambda: task_id in self._cancel_requests  # noqa: E731 - 闭包捕获 task_id
+
         try:
             status, message = ec.convert_file(engine, task["src_path"], dst,
-                                              on_progress=on_progress)
+                                              on_progress=on_progress,
+                                              cancel_check=cancel_check)
         except OSError as exc:
             self._finish(task_id, FAILED, error=f"无法启动转换引擎: {exc}")
             return
@@ -209,6 +262,8 @@ class TaskManager:
             self._finish(task_id, DONE, message=f"{message}；{warning}" if warning else message)
         elif status == ec.STATUS_SKIPPED:
             self._finish(task_id, SKIPPED, message=message)
+        elif message == "已取消":
+            self._finish(task_id, CANCELLED, message=message)
         else:
             # 引擎报错尾巴映射为通俗文案，原始信息保留在 error_detail（技术方案 5.3）
             detail = self._engine_error_detail(message)
@@ -234,6 +289,8 @@ class TaskManager:
         task["error"] = error
         task["error_detail"] = error_detail
         task["finished_at"] = time.time()
+        log.info("任务结束 [%s] %s：%s", STATUS_LABEL[status], task["name"],
+                 message or error or "")
 
     # ── 查询与同步 ──
 

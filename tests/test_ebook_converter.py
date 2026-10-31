@@ -298,19 +298,25 @@ class TestRunConversion:
 
 
 class FakeStreamPopen:
-    """流式读取路径的 Popen 替身：stderr/stdout 为内存流，wait 可定时或超时。"""
+    """流式读取路径的 Popen 替身：stderr/stdout 为内存流，wait 可定时或超时。
+
+    hang=True 时模拟"转换一直不结束"：未 killed 前 wait 一律抛 TimeoutExpired。
+    """
 
     def __init__(self, returncode=0, stderr="", stdout="", action=None,
-                 output_file=None):
+                 output_file=None, hang=False):
         self.returncode = returncode
         self.stderr = io.StringIO(stderr)
         self.stdout = io.StringIO(stdout)
         self._action = action
         self._action_fired = False
         self._output_file = output_file
+        self._hang = hang
         self.killed = False
 
     def wait(self, timeout=None):
+        if self._hang and not self.killed:
+            raise subprocess.TimeoutExpired(cmd="x", timeout=timeout or 1)
         if self._action is not None and not self._action_fired:
             self._action_fired = True
             self._action()
@@ -395,12 +401,10 @@ class TestConvertFileProgress:
         src.write_text("x")
         dst = tmp_path / "a.epub"
 
-        def timeout_action():
-            (_ for _ in ()).throw(subprocess.TimeoutExpired(cmd="x", timeout=1))
-
-        fake = FakeStreamPopen(action=timeout_action)
+        fake = FakeStreamPopen(hang=True, output_file=dst)
         monkeypatch.setattr(ec.subprocess, "Popen", lambda *a, **k: fake)
-        status, msg = ec.convert_file("dummy-engine", src, dst, on_progress=lambda pct: None)
+        monkeypatch.setattr(ec, "CONVERT_TIMEOUT_SECONDS", 1)  # 缩短 deadline 加速测试
+        status, msg = ec.convert_file("dummy-engine", src, dst, on_progress=lambda p: None)
         assert status == ec.STATUS_FAILED
         assert "超时" in msg
         assert fake.killed
@@ -419,6 +423,33 @@ class TestConvertFileProgress:
         status, _ = ec.convert_file("dummy-engine", src, dst, on_progress=seen.append)
         assert status == ec.STATUS_OK
         assert seen == [100]
+
+
+class TestConvertFileCancel:
+    """cancel_check 取消路径（V1.1 C2）：轮询取消请求，杀进程并清理残缺输出。"""
+
+    def test_cancel_check_stops_process_and_cleans_up(self, tmp_path, monkeypatch):
+        src = tmp_path / "a.txt"
+        src.write_text("x")
+        dst = tmp_path / "a.epub"
+        fake = FakeStreamPopen(hang=True, output_file=dst)
+        monkeypatch.setattr(ec.subprocess, "Popen", lambda *a, **k: fake)
+        status, msg = ec.convert_file("dummy-engine", src, dst,
+                                      on_progress=lambda p: None, cancel_check=lambda: True)
+        assert status == ec.STATUS_FAILED
+        assert "已取消" in msg
+        assert fake.killed
+        assert not dst.exists()
+
+    def test_cancel_check_false_runs_to_completion(self, tmp_path, monkeypatch):
+        src = tmp_path / "a.txt"
+        src.write_text("x")
+        dst = tmp_path / "a.epub"
+        monkeypatch.setattr(ec.subprocess, "Popen",
+                            lambda *a, **k: FakeStreamPopen(output_file=dst))
+        status, _ = ec.convert_file("dummy-engine", src, dst,
+                                    on_progress=lambda p: None, cancel_check=lambda: False)
+        assert status == ec.STATUS_OK
 
 
 def make_text_pdf(path):

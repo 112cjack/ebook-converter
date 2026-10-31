@@ -6,6 +6,7 @@
 """
 
 import atexit
+import logging
 import shutil
 from pathlib import Path
 
@@ -15,6 +16,9 @@ import ebook_converter as ec
 
 from . import api, settings
 from .tasks import TaskManager
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+log = logging.getLogger("ebook-converter")
 
 
 def make_engine_resolver(settings_data):
@@ -33,6 +37,8 @@ def create_app(base_dir=None, testing=False):
     """构建 Flask 应用：装配设置、任务管理器、路由与错误处理。"""
     base = Path(base_dir) if base_dir else settings.base_dir()
     upload_dir = base / "tmp" / "uploads"
+    # 启动时清空上次运行的残留上传（内存任务此刻必然为空，残留全是垃圾）
+    shutil.rmtree(upload_dir, ignore_errors=True)
     upload_dir.mkdir(parents=True, exist_ok=True)
 
     app = Flask(__name__, static_folder="static", static_url_path="")
