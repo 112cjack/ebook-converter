@@ -173,6 +173,15 @@
     else msg = "全部转换完成，共 " + done + " 个文件";
     toast(msg, failed ? "warn" : "ok");
     announce(msg);
+    notifyDesktop(msg);
+  }
+
+  function notifyDesktop(msg) {
+    // 页面在前台时 toast 足够；仅在后台标签页用系统通知提醒
+    if (!("Notification" in window) || document.hasFocus()) return;
+    if (Notification.permission === "granted") {
+      try { new Notification("电子书转换器", { body: msg }); } catch (e) { /* 部分环境不支持 */ }
+    }
   }
 
   // ── 渲染：引擎胶囊 / 引导条 ──
@@ -362,6 +371,17 @@
       open.insertBefore(icon("folder-open"), open.firstChild);
       open.addEventListener("click", function () { openFolder(task.output_dir); });
       acts.appendChild(open);
+      var openf = el("button", "x-mini", "打开文件");
+      openf.type = "button";
+      openf.title = "用系统默认程序打开 " + (task.output_path || "").split(/[\\/]/).pop();
+      openf.addEventListener("click", function () {
+        api("/api/open-file", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: task.output_path }),
+        }).catch(function (err) { if (!err.network) toast(err.message, "warn"); });
+      });
+      acts.appendChild(openf);
     }
     if (task && task.status === "failed") {
       var retry = el("button", "x-mini", "重试");
@@ -521,6 +541,22 @@
     }
   }
 
+  function watchConvert(paths) {
+    if (!paths || !paths.length) return;
+    api("/api/watch-convert", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paths: paths }),
+    }).then(function (body) {
+      toast("已把 " + body.tasks.length + " 个文件加入转换队列", "ok");
+      state.wasBusy = true;
+      refreshTasks();
+      return loadWatch();
+    }).catch(function (err) {
+      if (!err.network) toast(err.message, "warn");
+    });
+  }
+
   function renderWatch(w) {
     var card = $("x-watchcard");
     if (!w || !w.enabled) {
@@ -544,6 +580,7 @@
       toast("监听发现 " + w.fresh.length + " 个不符文件，请查看监听卡", "warn");
     }
     list.textContent = "";
+    var convertible = violations.filter(function (v) { return v.kind === "wrong_format"; });
     if (!violations.length) {
       list.appendChild(el("div", "x-watchrow", "当前没有不符合要求的文件。"));
     }
@@ -553,8 +590,25 @@
       row.appendChild(flag);
       row.appendChild(el("span", "x-name", v.name));
       row.appendChild(el("span", "", v.path));
+      if (v.kind === "wrong_format") {
+        var btn = el("button", "x-mini", "转换");
+        btn.type = "button";
+        btn.title = "按期望格式 " + fmtLabel(w.format) + " 转换此文件（原文件保持不变）";
+        btn.addEventListener("click", function () { watchConvert([v.path]); });
+        row.appendChild(btn);
+      }
       list.appendChild(row);
     });
+    if (convertible.length) {
+      var allRow = el("div", "x-watchrow");
+      var all = el("button", "x-mini", "全部转换（" + convertible.length + " 个）");
+      all.type = "button";
+      all.addEventListener("click", function () {
+        watchConvert(convertible.map(function (v) { return v.path; }));
+      });
+      allRow.appendChild(all);
+      list.appendChild(allRow);
+    }
     list.hidden = !state.watchOpen;
     $("x-watchtoggle").textContent = state.watchOpen ? "收起" : "查看不符文件";
   }
@@ -579,6 +633,36 @@
 
   // ── 动作 ──
 
+  function uploadWithProgress(form, onProgress) {
+    return new Promise(function (resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/upload");
+      xhr.upload.onprogress = function (e) {
+        if (e.lengthComputable && onProgress) onProgress(Math.round(e.loaded * 100 / e.total));
+      };
+      xhr.onload = function () {
+        showConnBanner(false);
+        var body = {};
+        try { body = JSON.parse(xhr.responseText); } catch (e) { /* 非 JSON 响应 */ }
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(body);
+        } else {
+          var err = new Error(body.error || ("请求失败（" + xhr.status + "）"));
+          err.status = xhr.status;
+          err.body = body;
+          reject(err);
+        }
+      };
+      xhr.onerror = function () {
+        showConnBanner(true);
+        var err = new Error(CONN_MSG);
+        err.network = true;
+        reject(err);
+      };
+      xhr.send(form);
+    });
+  }
+
   function addFiles(fileList) {
     if (!fileList || !fileList.length) return;
     if (state.uploading) return;
@@ -589,9 +673,13 @@
       count++;
     });
     state.uploading = true;
-    $("x-uploading").hidden = false;
+    var progressEl = $("x-uploading");
+    progressEl.hidden = false;
+    progressEl.textContent = "正在上传… 0%";
     renderList();
-    api("/api/upload", { method: "POST", body: form }).then(function (body) {
+    uploadWithProgress(form, function (pct) {
+      progressEl.textContent = "正在上传… " + pct + "%";
+    }).then(function (body) {
       if (body.uploads.length) {
         announce("已添加 " + body.uploads.length + " 个文件");
         toast("已添加 " + body.uploads.length + " 个文件", "ok");
@@ -601,10 +689,11 @@
       });
       return refreshTasks();
     }).catch(function (err) {
-      toast(err.message, "warn");
+      if (!err.network) toast(err.message, "warn");
     }).finally(function () {
       state.uploading = false;
-      $("x-uploading").hidden = true;
+      progressEl.hidden = true;
+      progressEl.textContent = "正在上传…";
       $("x-file").value = "";
       renderList();
     });
@@ -627,6 +716,10 @@
     }).then(function () {
       announce("开始转换，共 " + waiting.length + " 个文件");
       state.wasBusy = true;
+      // 大文件转换期间用户常切走标签页，提前请求通知权限（用户手势内）
+      if ("Notification" in window && Notification.permission === "default") {
+        try { Notification.requestPermission(); } catch (e) { /* 忽略 */ }
+      }
       return refreshTasks();
     }).catch(function (err) {
       if (!err.network) toast(err.message, "warn");
@@ -800,6 +893,18 @@
   drop.addEventListener("drop", function (e) {
     e.preventDefault();
     drop.classList.remove("is-over");
+    var hasDir = false;
+    if (e.dataTransfer && e.dataTransfer.items) {
+      for (var i = 0; i < e.dataTransfer.items.length; i++) {
+        var entry = e.dataTransfer.items[i].webkitGetAsEntry &&
+                    e.dataTransfer.items[i].webkitGetAsEntry();
+        if (entry && entry.isDirectory) { hasDir = true; break; }
+      }
+    }
+    if (hasDir) {
+      toast("暂不支持拖入整个文件夹，请打开文件夹后选择里面的文件，或使用监听功能", "warn");
+      return;
+    }
     if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
   });
 
@@ -913,11 +1018,27 @@
     Array.prototype.forEach.call(document.querySelectorAll(".x-theme"), function (b) {
       b.classList.toggle("is-on", b.getAttribute("data-theme") === name);
     });
-    // Chromium 在 color-scheme 切换后 backdrop-filter 层可能渲染陈旧，强制重绘一次
-    document.body.style.opacity = "0.99";
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () { document.body.style.opacity = ""; });
+    // Chromium 在 color-scheme 切换后 backdrop-filter 层可能渲染陈旧：
+    // 短暂移除再恢复各面板的 backdrop-filter，强制重建合成层
+    var blurEls = document.querySelectorAll(
+      ".x-top,.x-row,.x-drop,.x-action,.x-dlg,.x-toast,.x-watchcard,.x-guide");
+    var layers = document.querySelectorAll(".x-scenebg,.x-texbg,.x-grain");
+    Array.prototype.forEach.call(layers, function (el) {
+      el.style.display = "none";
     });
+    Array.prototype.forEach.call(blurEls, function (el) {
+      el.style.backdropFilter = "none";
+      el.style.webkitBackdropFilter = "none";
+    });
+    setTimeout(function () {
+      Array.prototype.forEach.call(blurEls, function (el) {
+        el.style.backdropFilter = "";
+        el.style.webkitBackdropFilter = "";
+      });
+      Array.prototype.forEach.call(layers, function (el) {
+        el.style.display = "";
+      });
+    }, 80);
     try { localStorage.setItem("theme", name); } catch (e) {}
   }
 
