@@ -661,7 +661,7 @@ class TestShortcut:
         cmd = calls[0]
         assert "powershell" in str(cmd[0]).lower()
         assert "GetFolderPath('Desktop')" in cmd[-1]
-        assert "电子书转换器.lnk" in cmd[-1]
+        assert "书渡.lnk" in cmd[-1]
 
     def test_powershell_failure_maps_to_error(self, app_env, monkeypatch):
         monkeypatch.setattr(sys, "frozen", True, raising=False)

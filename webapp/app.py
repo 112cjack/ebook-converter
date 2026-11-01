@@ -49,7 +49,7 @@ def main():
         print(f"错误：端口 {DEFAULT_PORT}~{DEFAULT_PORT + PORT_TRIES - 1} 均被占用，无法启动。")
         return 1
     url = f"http://127.0.0.1:{port}"
-    print("=== 电子书转换器 ===")
+    print("=== 书渡 · 本地电子书转换 ===")
     print(f"服务地址: {url}  （仅本机访问，不监听局域网）")
     print("浏览器未自动打开时，请手动复制上面的地址到浏览器。")
     print("关闭本窗口即退出程序；转换过程中请勿关闭。")

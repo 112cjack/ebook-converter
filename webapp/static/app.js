@@ -1,4 +1,4 @@
-/* 电子书转换器 · 前端逻辑
+/* 书渡（电子书转换器）· 前端逻辑
  * 数据同步：页面加载取 /api/status 与 /api/tasks；提交转换后轮询
  * /api/tasks（进行中 1 秒/次，空闲 3 秒/次）。所有动态文本经 textContent 写入。
  */
@@ -180,7 +180,7 @@
     // 页面在前台时 toast 足够；仅在后台标签页用系统通知提醒
     if (!("Notification" in window) || document.hasFocus()) return;
     if (Notification.permission === "granted") {
-      try { new Notification("电子书转换器", { body: msg }); } catch (e) { /* 部分环境不支持 */ }
+      try { new Notification("书渡", { body: msg }); } catch (e) { /* 部分环境不支持 */ }
     }
   }
 

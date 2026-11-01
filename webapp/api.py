@@ -124,7 +124,7 @@ def get_status():
     """页面加载时调用：引擎检测状态、格式表与设置摘要。"""
     data = _settings_data()
     return jsonify({
-        "app": "电子书转换器",
+        "app": "书渡",
         "engine": engine_state(),
         "output_formats": list(ec.OUTPUT_FORMATS),
         "input_extensions": sorted(ec.INPUT_EXTENSIONS),
@@ -295,7 +295,7 @@ def create_shortcut():
     ps = (
         "$ws = New-Object -ComObject WScript.Shell; "
         "$lnk = [IO.Path]::Combine([Environment]::GetFolderPath('Desktop'), "
-        f"'电子书转换器.lnk'); "
+        f"'书渡.lnk'); "
         "$s = $ws.CreateShortcut($lnk); "
         f"$s.TargetPath = '{str(target).replace(quote, quote * 2)}'; "
         f"$s.WorkingDirectory = '{str(target.parent).replace(quote, quote * 2)}'; "
