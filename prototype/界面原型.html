@@ -18,12 +18,12 @@
   --x-accent:#D9A441; --x-accentbg:#C89138; --x-onaccent:#221C10;
   --x-moss:#93AF87; --x-clay:#D98B72; --x-track:#322C22;
   --x-drophover:#2A241C;
+  --x-noise:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  --x-grain:.5;
   --x-texture:
     radial-gradient(120% 100% at 50% 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,.46) 100%),
     repeating-linear-gradient(0deg, rgba(234,224,203,.05) 0 1px, transparent 1px 4px);
-  --x-scene: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20480%20320%22%20preserveAspectRatio%3D%22xMidYMax%20slice%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22c%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23FFD9A0%22%20stop-opacity%3D%22.26%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23FFD9A0%22%20stop-opacity%3D%220%22%2F%3E%3C%2FlinearGradient%3E%3CradialGradient%20id%3D%22g%22%20cx%3D%22.5%22%20cy%3D%22.5%22%20r%3D%22.5%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23FFD9A0%22%20stop-opacity%3D%22.45%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23FFD9A0%22%20stop-opacity%3D%220%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Cpolygon%20points%3D%22318%2C150%20352%2C150%20404%2C221%20266%2C221%22%20fill%3D%22url%28%23c%29%22%2F%3E%3Cellipse%20cx%3D%22335%22%20cy%3D%22122%22%20rx%3D%2246%22%20ry%3D%2234%22%20fill%3D%22url%28%23g%29%22%2F%3E%3Cpath%20d%3D%22M303%20221%20C310%20192%20318%20170%20331%20146%22%20stroke%3D%22%230D0A07%22%20stroke-width%3D%225%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%2F%3E%3Cpath%20d%3D%22M313%20128%20L351%20122%20L362%20146%20L318%20152%20Z%22%20fill%3D%22%230D0A07%22%20stroke%3D%22%23FFC887%22%20stroke-opacity%3D%22.4%22%20stroke-width%3D%221.8%22%2F%3E%3Cellipse%20cx%3D%22337%22%20cy%3D%22151%22%20rx%3D%2220%22%20ry%3D%225%22%20fill%3D%22%23FFD9A0%22%20opacity%3D%22.6%22%2F%3E%3Cpath%20d%3D%22M281%20214%20h58%20v7%20h-58%20z%22%20fill%3D%22%230D0A07%22%2F%3E%3Crect%20y%3D%22221%22%20width%3D%22480%22%20height%3D%2299%22%20fill%3D%22%23231810%22%2F%3E%3Crect%20y%3D%22221%22%20width%3D%22480%22%20height%3D%222.5%22%20fill%3D%22%23FFC887%22%20opacity%3D%22.16%22%2F%3E%3Cg%20stroke%3D%22%23000%22%20stroke-opacity%3D%22.4%22%20stroke-width%3D%221.6%22%3E%3Cline%20x1%3D%220%22%20y1%3D%22247%22%20x2%3D%22480%22%20y2%3D%22245%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22274%22%20x2%3D%22480%22%20y2%3D%22276%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22300%22%20x2%3D%22480%22%20y2%3D%22299%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22%23FFB870%22%20stroke-opacity%3D%22.09%22%20stroke-width%3D%221.4%22%3E%3Cline%20x1%3D%220%22%20y1%3D%22236%22%20x2%3D%22480%22%20y2%3D%22235%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22262%22%20x2%3D%22480%22%20y2%3D%22263%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22289%22%20x2%3D%22480%22%20y2%3D%22288%22%2F%3E%3C%2Fg%3E%3Crect%20x%3D%2286%22%20y%3D%22196%22%20width%3D%2266%22%20height%3D%2225%22%20rx%3D%222.5%22%20fill%3D%22%232B1D12%22%2F%3E%3Crect%20x%3D%2292%22%20y%3D%22174%22%20width%3D%2258%22%20height%3D%2222%22%20rx%3D%222.5%22%20fill%3D%22%23241811%22%2F%3E%3Crect%20x%3D%2298%22%20y%3D%22155%22%20width%3D%2250%22%20height%3D%2219%22%20rx%3D%222.5%22%20fill%3D%22%232E2013%22%2F%3E%3Crect%20x%3D%2286%22%20y%3D%22217%22%20width%3D%2266%22%20height%3D%223%22%20fill%3D%22%23FFC887%22%20opacity%3D%22.14%22%2F%3E%3Cellipse%20cx%3D%22334%22%20cy%3D%22230%22%20rx%3D%22100%22%20ry%3D%2213%22%20fill%3D%22%23FFC887%22%20opacity%3D%22.13%22%2F%3E%3C%2Fsvg%3E");
-  --x-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
-  --x-grain:.5;
+  --x-scene:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20480%20320%22%20preserveAspectRatio%3D%22xMidYMax%20slice%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22c%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23FFD9A0%22%20stop-opacity%3D%22.26%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23FFD9A0%22%20stop-opacity%3D%220%22%2F%3E%3C%2FlinearGradient%3E%3CradialGradient%20id%3D%22g%22%20cx%3D%22.5%22%20cy%3D%22.5%22%20r%3D%22.5%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23FFD9A0%22%20stop-opacity%3D%22.45%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23FFD9A0%22%20stop-opacity%3D%220%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Cpolygon%20points%3D%22318%2C150%20352%2C150%20404%2C221%20266%2C221%22%20fill%3D%22url%28%23c%29%22%2F%3E%3Cellipse%20cx%3D%22335%22%20cy%3D%22122%22%20rx%3D%2246%22%20ry%3D%2234%22%20fill%3D%22url%28%23g%29%22%2F%3E%3Cpath%20d%3D%22M303%20221%20C310%20192%20318%20170%20331%20146%22%20stroke%3D%22%230D0A07%22%20stroke-width%3D%225%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%2F%3E%3Cpath%20d%3D%22M313%20128%20L351%20122%20L362%20146%20L318%20152%20Z%22%20fill%3D%22%230D0A07%22%20stroke%3D%22%23FFC887%22%20stroke-opacity%3D%22.4%22%20stroke-width%3D%221.8%22%2F%3E%3Cellipse%20cx%3D%22337%22%20cy%3D%22151%22%20rx%3D%2220%22%20ry%3D%225%22%20fill%3D%22%23FFD9A0%22%20opacity%3D%22.6%22%2F%3E%3Cpath%20d%3D%22M281%20214%20h58%20v7%20h-58%20z%22%20fill%3D%22%230D0A07%22%2F%3E%3Crect%20y%3D%22221%22%20width%3D%22480%22%20height%3D%2299%22%20fill%3D%22%23231810%22%2F%3E%3Crect%20y%3D%22221%22%20width%3D%22480%22%20height%3D%222.5%22%20fill%3D%22%23FFC887%22%20opacity%3D%22.16%22%2F%3E%3Cg%20stroke%3D%22%23000%22%20stroke-opacity%3D%22.4%22%20stroke-width%3D%221.6%22%3E%3Cline%20x1%3D%220%22%20y1%3D%22247%22%20x2%3D%22480%22%20y2%3D%22245%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22274%22%20x2%3D%22480%22%20y2%3D%22276%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22300%22%20x2%3D%22480%22%20y2%3D%22299%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22%23FFB870%22%20stroke-opacity%3D%22.09%22%20stroke-width%3D%221.4%22%3E%3Cline%20x1%3D%220%22%20y1%3D%22236%22%20x2%3D%22480%22%20y2%3D%22235%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22262%22%20x2%3D%22480%22%20y2%3D%22263%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22289%22%20x2%3D%22480%22%20y2%3D%22288%22%2F%3E%3C%2Fg%3E%3Crect%20x%3D%2286%22%20y%3D%22196%22%20width%3D%2266%22%20height%3D%2225%22%20rx%3D%222.5%22%20fill%3D%22%232B1D12%22%2F%3E%3Crect%20x%3D%2292%22%20y%3D%22174%22%20width%3D%2258%22%20height%3D%2222%22%20rx%3D%222.5%22%20fill%3D%22%23241811%22%2F%3E%3Crect%20x%3D%2298%22%20y%3D%22155%22%20width%3D%2250%22%20height%3D%2219%22%20rx%3D%222.5%22%20fill%3D%22%232E2013%22%2F%3E%3Crect%20x%3D%2286%22%20y%3D%22217%22%20width%3D%2266%22%20height%3D%223%22%20fill%3D%22%23FFC887%22%20opacity%3D%22.14%22%2F%3E%3Cellipse%20cx%3D%22334%22%20cy%3D%22230%22%20rx%3D%22100%22%20ry%3D%2213%22%20fill%3D%22%23FFC887%22%20opacity%3D%22.13%22%2F%3E%3C%2Fsvg%3E");
   --x-serif: Georgia, "Songti SC", "SimSun", serif;
   --x-mono: Consolas, "Courier New", monospace;
   font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
@@ -31,16 +31,28 @@
 }
 #ebook-converter-demo[data-theme="kindle"]{
   color-scheme: light;
-  --x-paper:#A8A49B; --x-surface:rgba(255,255,255,.58); --x-dropbg:rgba(255,255,255,.44);
-  --x-ink:#1B1B18; --x-muted:#403D37; --x-line:rgba(27,27,24,.16);
-  --x-accent:#1B1B18; --x-accentbg:#1B1B18; --x-onaccent:#FBFBF7;
-  --x-moss:#2F6640; --x-clay:#A63A2B; --x-track:rgba(27,27,24,.1);
-  --x-drophover:rgba(255,255,255,.85);
+  --x-paper:#D6D4CC; --x-surface:rgba(255,255,255,.52); --x-dropbg:rgba(255,255,255,.28);
+  --x-ink:#1B1B18; --x-muted:#4A473F; --x-line:rgba(27,27,24,.18);
+  --x-accent:#1B1B18; --x-accentbg:#1B1B18; --x-onaccent:#F0EEE8;
+  --x-moss:#2F6640; --x-clay:#A63A2B; --x-track:rgba(27,27,24,.12);
+  --x-drophover:rgba(255,255,255,.78);
+  --x-grain:.4;
   --x-texture:
-    radial-gradient(120% 100% at 50% 0%, rgba(27,27,24,0) 56%, rgba(27,27,24,.34) 100%),
-    radial-gradient(60% 26% at 50% 0%, rgba(255,250,238,.15), transparent 72%);
-  --x-scene: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20480%20320%22%20preserveAspectRatio%3D%22xMidYMax%20slice%22%3E%3Crect%20x%3D%2212%22%20y%3D%2212%22%20width%3D%22456%22%20height%3D%22296%22%20fill%3D%22none%22%20stroke%3D%22rgba%2827%2C27%2C24%2C.2%29%22%20stroke-width%3D%221.5%22%2F%3E%3Crect%20x%3D%2218%22%20y%3D%2218%22%20width%3D%22444%22%20height%3D%22284%22%20fill%3D%22none%22%20stroke%3D%22rgba%2827%2C27%2C24%2C.09%29%22%20stroke-width%3D%221%22%2F%3E%3Crect%20y%3D%22252%22%20width%3D%22480%22%20height%3D%2268%22%20fill%3D%22rgba%2827%2C27%2C24%2C.12%29%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22252%22%20x2%3D%22480%22%20y2%3D%22252%22%20stroke%3D%22rgba%2827%2C27%2C24%2C.4%29%22%20stroke-width%3D%222%22%2F%3E%3Crect%20width%3D%22480%22%20height%3D%2290%22%20fill%3D%22rgba%28255%2C250%2C238%2C.12%29%22%2F%3E%3Cg%20fill%3D%22rgba%2837%2C35%2C30%2C.82%29%22%3E%3Crect%20x%3D%22146%22%20y%3D%22226%22%20width%3D%22132%22%20height%3D%2226%22%20rx%3D%222%22%2F%3E%3Crect%20x%3D%22154%22%20y%3D%22200%22%20width%3D%22116%22%20height%3D%2226%22%20rx%3D%222%22%2F%3E%3Crect%20x%3D%22162%22%20y%3D%22176%22%20width%3D%22100%22%20height%3D%2224%22%20rx%3D%222%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22rgba%28168%2C164%2C155%2C.6%29%22%20stroke-width%3D%221.5%22%3E%3Cline%20x1%3D%22150%22%20y1%3D%22245%22%20x2%3D%22274%22%20y2%3D%22245%22%2F%3E%3Cline%20x1%3D%22158%22%20y1%3D%22219%22%20x2%3D%22266%22%20y2%3D%22219%22%2F%3E%3Cline%20x1%3D%22166%22%20y1%3D%22194%22%20x2%3D%22258%22%20y2%3D%22194%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22rgba%28240%2C238%2C230%2C.55%29%22%3E%3Crect%20x%3D%22160%22%20y%3D%22236%22%20width%3D%2236%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%22168%22%20y%3D%22210%22%20width%3D%2230%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%22176%22%20y%3D%22185%22%20width%3D%2226%22%20height%3D%223%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22rgba%2837%2C35%2C30%2C.78%29%22%20stroke-width%3D%223%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M356%20218%20v28%20a14%2014%200%200%200%2028%200%20v-28%22%2F%3E%3Cpath%20d%3D%22M384%20224%20q15%202%200%2016%22%2F%3E%3Cline%20x1%3D%22348%22%20y1%3D%22250%22%20x2%3D%22392%22%20y2%3D%22250%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22M366%20208%20q4%20-8%200%20-14%20M378%20208%20q4%20-8%200%20-14%22%20stroke%3D%22rgba%2837%2C35%2C30%2C.35%29%22%20stroke-width%3D%222.5%22%20fill%3D%22none%22%2F%3E%3Cg%20stroke%3D%22rgba%2837%2C35%2C30%2C.62%29%22%20stroke-width%3D%223%22%20fill%3D%22none%22%3E%3Ccircle%20cx%3D%22424%22%20cy%3D%22240%22%20r%3D%2211%22%2F%3E%3Ccircle%20cx%3D%22452%22%20cy%3D%22240%22%20r%3D%2211%22%2F%3E%3Cpath%20d%3D%22M435%20238%20q3%20-5%206%200%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
-  --x-grain:.42;
+    radial-gradient(120% 100% at 50% 0%, rgba(27,27,24,0) 58%, rgba(27,27,24,.26) 100%);
+  --x-scene:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20480%20320%22%20preserveAspectRatio%3D%22xMidYMax%20slice%22%3E%3Ctext%20x%3D%22252%22%20y%3D%22128%22%20text-anchor%3D%22middle%22%20font-family%3D%22Georgia%2CSongti%20SC%2CSimSun%2Cserif%22%20font-size%3D%2217%22%20letter-spacing%3D%227%22%20fill%3D%22rgba%2858%2C56%2C51%2C.62%29%22%3E%E7%BA%B5%E4%B8%80%E8%8B%87%E4%B9%8B%E6%89%80%E5%A6%82%20%C2%B7%20%E5%87%8C%E4%B8%87%E9%A1%B7%E4%B9%8B%E8%8C%AB%E7%84%B6%3C%2Ftext%3E%3Cg%20fill%3D%22rgba%2858%2C56%2C51%2C.88%29%22%3E%3Crect%20x%3D%2252%22%20y%3D%22166%22%20width%3D%22112%22%20height%3D%2224%22%20rx%3D%222%22%2F%3E%3Crect%20x%3D%2260%22%20y%3D%22142%22%20width%3D%2298%22%20height%3D%2224%22%20rx%3D%222%22%2F%3E%3Crect%20x%3D%2266%22%20y%3D%22120%22%20width%3D%2286%22%20height%3D%2222%22%20rx%3D%222%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22rgba%28214%2C212%2C204%2C.75%29%22%20stroke-width%3D%221.6%22%3E%3Cline%20x1%3D%2256%22%20y1%3D%22184%22%20x2%3D%22166%22%20y2%3D%22184%22%2F%3E%3Cline%20x1%3D%2264%22%20y1%3D%22160%22%20x2%3D%22154%22%20y2%3D%22160%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22rgba%28214%2C212%2C204%2C.6%29%22%3E%3Crect%20x%3D%2260%22%20y%3D%22176%22%20width%3D%2232%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%2268%22%20y%3D%22152%22%20width%3D%2228%22%20height%3D%223%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22rgba%2858%2C56%2C51%2C.9%29%22%20stroke-width%3D%223.4%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M258%20252%20Q262%20224%20292%20218%20L426%20218%20Q450%20224%20452%20252%22%2F%3E%3Cpath%20d%3D%22M292%20218%20Q330%20194%20360%20202%20Q392%20194%20426%20218%22%2F%3E%3Cline%20x1%3D%22360%22%20y1%3D%22202%22%20x2%3D%22360%22%20y2%3D%22218%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22rgba%2858%2C56%2C51%2C.92%29%22%3E%3Cpath%20d%3D%22M298%20214%20Q294%20186%20322%20178%20Q326%20168%20334%20176%20L342%20170%20L346%20182%20Q376%20182%20392%20200%20Q402%20210%20398%20214%20Z%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22M396%20212%20Q420%20220%20412%20198%20Q406%20184%20418%20176%22%20fill%3D%22none%22%20stroke%3D%22rgba%2858%2C56%2C51%2C.85%29%22%20stroke-width%3D%224.4%22%20stroke-linecap%3D%22round%22%2F%3E%3Ccircle%20cx%3D%22330%22%20cy%3D%22190%22%20r%3D%222.4%22%20fill%3D%22%23D6D4CC%22%2F%3E%3Cpath%20d%3D%22M400%20212%20Q424%20220%20416%20198%20Q408%20184%20420%20176%22%20fill%3D%22none%22%20stroke%3D%22rgba%2858%2C56%2C51%2C.85%29%22%20stroke-width%3D%224.4%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22262%22%20x2%3D%22480%22%20y2%3D%22262%22%20stroke%3D%22rgba%2858%2C56%2C51%2C.35%29%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E");
+}
+/* Kindle · 墨夜：黑底白字（同构图熄屏反白） */
+#ebook-converter-demo[data-theme="kindledark"]{
+  color-scheme: dark;
+  --x-paper:#141311; --x-surface:rgba(44,42,38,.6); --x-dropbg:rgba(44,42,38,.3);
+  --x-ink:#E4E2DA; --x-muted:#A5A299; --x-line:rgba(228,226,218,.2);
+  --x-accent:#D8D6CE; --x-accentbg:#D8D6CE; --x-onaccent:#141311;
+  --x-moss:#8FB894; --x-clay:#D9907E; --x-track:rgba(228,226,218,.18);
+  --x-drophover:rgba(44,42,38,.85);
+  --x-grain:.44;
+  --x-texture:
+    radial-gradient(120% 100% at 50% 0%, rgba(0,0,0,0) 55%, rgba(0,0,0,.5) 100%);
+  --x-scene:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20480%20320%22%20preserveAspectRatio%3D%22xMidYMax%20slice%22%3E%3Ctext%20x%3D%22252%22%20y%3D%22128%22%20text-anchor%3D%22middle%22%20font-family%3D%22Georgia%2CSongti%20SC%2CSimSun%2Cserif%22%20font-size%3D%2217%22%20letter-spacing%3D%227%22%20fill%3D%22rgba%28216%2C214%2C206%2C.6%29%22%3E%E7%BA%B5%E4%B8%80%E8%8B%87%E4%B9%8B%E6%89%80%E5%A6%82%20%C2%B7%20%E5%87%8C%E4%B8%87%E9%A1%B7%E4%B9%8B%E8%8C%AB%E7%84%B6%3C%2Ftext%3E%3Cg%20fill%3D%22rgba%28216%2C214%2C206%2C.88%29%22%3E%3Crect%20x%3D%2252%22%20y%3D%22166%22%20width%3D%22112%22%20height%3D%2224%22%20rx%3D%222%22%2F%3E%3Crect%20x%3D%2260%22%20y%3D%22142%22%20width%3D%2298%22%20height%3D%2224%22%20rx%3D%222%22%2F%3E%3Crect%20x%3D%2266%22%20y%3D%22120%22%20width%3D%2286%22%20height%3D%2222%22%20rx%3D%222%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22rgba%2820%2C19%2C17%2C.55%29%22%20stroke-width%3D%221.6%22%3E%3Cline%20x1%3D%2256%22%20y1%3D%22184%22%20x2%3D%22166%22%20y2%3D%22184%22%2F%3E%3Cline%20x1%3D%2264%22%20y1%3D%22160%22%20x2%3D%22154%22%20y2%3D%22160%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22rgba%2820%2C19%2C17%2C.5%29%22%3E%3Crect%20x%3D%2260%22%20y%3D%22176%22%20width%3D%2232%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%2268%22%20y%3D%22152%22%20width%3D%2228%22%20height%3D%223%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22rgba%28216%2C214%2C206%2C.85%29%22%20stroke-width%3D%223.4%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M258%20252%20Q262%20224%20292%20218%20L426%20218%20Q450%20224%20452%20252%22%2F%3E%3Cpath%20d%3D%22M292%20218%20Q330%20194%20360%20202%20Q392%20194%20426%20218%22%2F%3E%3Cline%20x1%3D%22360%22%20y1%3D%22202%22%20x2%3D%22360%22%20y2%3D%22218%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22rgba%28216%2C214%2C206%2C.92%29%22%3E%3Cpath%20d%3D%22M298%20214%20Q294%20186%20322%20178%20Q326%20168%20334%20176%20L342%20170%20L346%20182%20Q376%20182%20392%20200%20Q402%20210%20398%20214%20Z%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22M396%20212%20Q420%20220%20412%20198%20Q406%20184%20418%20176%22%20fill%3D%22none%22%20stroke%3D%22rgba%28216%2C214%2C206%2C.8%29%22%20stroke-width%3D%224.4%22%20stroke-linecap%3D%22round%22%2F%3E%3Ccircle%20cx%3D%22330%22%20cy%3D%22190%22%20r%3D%222.4%22%20fill%3D%22%23141311%22%2F%3E%3Cpath%20d%3D%22M400%20212%20Q424%20220%20416%20198%20Q408%20184%20420%20176%22%20fill%3D%22none%22%20stroke%3D%22rgba%28216%2C214%2C206%2C.8%29%22%20stroke-width%3D%224.4%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22262%22%20x2%3D%22480%22%20y2%3D%22262%22%20stroke%3D%22rgba%28216%2C214%2C206%2C.3%29%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E");
 }
 #ebook-converter-demo[data-theme="santi"]{
   color-scheme: dark;
@@ -49,6 +61,7 @@
   --x-accent:#D6544A; --x-accentbg:#C24940; --x-onaccent:#FFFFFF;
   --x-moss:#7FB08E; --x-clay:#E08579; --x-track:#1D2536;
   --x-drophover:#16203A;
+  --x-grain:.45;
   --x-texture:
     radial-gradient(120% 100% at 50% 0%, rgba(2,4,10,0) 55%, rgba(2,4,10,.6) 100%),
     repeating-linear-gradient(0deg, rgba(215,223,239,.04) 0 1px, transparent 1px 56px),
@@ -64,8 +77,7 @@
     radial-gradient(1px 1px at 64% 86%, rgba(214,84,74,.4) 50%, transparent 51%),
     radial-gradient(70% 45% at 82% -8%, rgba(214,84,74,.22), transparent 65%),
     radial-gradient(60% 40% at 8% 108%, rgba(90,130,220,.16), transparent 65%);
-  --x-scene: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20480%20320%22%20preserveAspectRatio%3D%22xMidYMax%20slice%22%3E%3Crect%20y%3D%22218%22%20width%3D%22480%22%20height%3D%22102%22%20fill%3D%22%230B1424%22%2F%3E%3Cg%20stroke%3D%22rgba%28120%2C160%2C220%2C.12%29%22%20stroke-width%3D%221.4%22%3E%3Cline%20x1%3D%220%22%20y1%3D%22236%22%20x2%3D%22480%22%20y2%3D%22234%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22258%22%20x2%3D%22480%22%20y2%3D%22260%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22282%22%20x2%3D%22480%22%20y2%3D%22280%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22304%22%20x2%3D%22480%22%20y2%3D%22302%22%2F%3E%3C%2Fg%3E%3Cpolygon%20points%3D%220%2C96%2046%2C118%2046%2C320%200%2C320%22%20fill%3D%22rgba%284%2C7%2C14%2C.92%29%22%2F%3E%3Cpolygon%20points%3D%22480%2C96%20434%2C118%20434%2C320%20480%2C320%22%20fill%3D%22rgba%284%2C7%2C14%2C.92%29%22%2F%3E%3Cpolygon%20points%3D%2246%2C116%2062%2C120%20210%2C218%20156%2C218%22%20fill%3D%22rgba%28190%2C215%2C255%2C.055%29%22%2F%3E%3Cpolygon%20points%3D%22434%2C116%20418%2C120%20300%2C218%20354%2C218%22%20fill%3D%22rgba%28190%2C215%2C255%2C.055%29%22%2F%3E%3Cpath%20d%3D%22M80%20218%20L90%20168%20L136%20168%20L136%20146%20L196%20146%20L196%20152%20L238%20152%20L238%20132%20L272%20132%20L272%20152%20L306%20152%20L306%20126%20L338%20126%20L338%20168%20L392%20168%20L402%20218%20Z%22%20fill%3D%22%2304060C%22%2F%3E%3Crect%20x%3D%2280%22%20y%3D%22212%22%20width%3D%22322%22%20height%3D%222.5%22%20fill%3D%22rgba%28214%2C84%2C74%2C.55%29%22%2F%3E%3Ccircle%20cx%3D%22316%22%20cy%3D%22140%22%20r%3D%222.6%22%20fill%3D%22rgba%28214%2C84%2C74%2C.85%29%22%2F%3E%3Ccircle%20cx%3D%2286%22%20cy%3D%22206%22%20r%3D%222%22%20fill%3D%22rgba%28120%2C220%2C180%2C.6%29%22%2F%3E%3Ccircle%20cx%3D%22396%22%20cy%3D%22206%22%20r%3D%222%22%20fill%3D%22rgba%28214%2C84%2C74%2C.7%29%22%2F%3E%3Cg%20stroke%3D%22rgba%28215%2C223%2C239%2C.32%29%22%20stroke-width%3D%220.9%22%3E%3Cline%20x1%3D%2260%22%20y1%3D%2266%22%20x2%3D%2260%22%20y2%3D%22226%22%2F%3E%3Cline%20x1%3D%2284%22%20y1%3D%2260%22%20x2%3D%2284%22%20y2%3D%22228%22%2F%3E%3Cline%20x1%3D%22108%22%20y1%3D%2256%22%20x2%3D%22108%22%20y2%3D%22230%22%2F%3E%3Cline%20x1%3D%22132%22%20y1%3D%2252%22%20x2%3D%22132%22%20y2%3D%22231%22%2F%3E%3Cline%20x1%3D%22156%22%20y1%3D%2250%22%20x2%3D%22156%22%20y2%3D%22232%22%2F%3E%3Cline%20x1%3D%22180%22%20y1%3D%2248%22%20x2%3D%22180%22%20y2%3D%22233%22%2F%3E%3Cline%20x1%3D%22204%22%20y1%3D%2246%22%20x2%3D%22204%22%20y2%3D%22234%22%2F%3E%3Cline%20x1%3D%22228%22%20y1%3D%2244%22%20x2%3D%22228%22%20y2%3D%22234%22%2F%3E%3Cline%20x1%3D%22252%22%20y1%3D%2244%22%20x2%3D%22252%22%20y2%3D%22234%22%2F%3E%3Cline%20x1%3D%22276%22%20y1%3D%2246%22%20x2%3D%22276%22%20y2%3D%22233%22%2F%3E%3Cline%20x1%3D%22300%22%20y1%3D%2248%22%20x2%3D%22300%22%20y2%3D%22232%22%2F%3E%3Cline%20x1%3D%22324%22%20y1%3D%2252%22%20x2%3D%22324%22%20y2%3D%22231%22%2F%3E%3Cline%20x1%3D%22348%22%20y1%3D%2256%22%20x2%3D%22348%22%20y2%3D%22230%22%2F%3E%3Cline%20x1%3D%22372%22%20y1%3D%2260%22%20x2%3D%22372%22%20y2%3D%22228%22%2F%3E%3Cline%20x1%3D%22396%22%20y1%3D%2266%22%20x2%3D%22396%22%20y2%3D%22226%22%2F%3E%3Cline%20x1%3D%22420%22%20y1%3D%2272%22%20x2%3D%22420%22%20y2%3D%22224%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22rgba%28230%2C235%2C250%2C.1%29%22%3E%3Crect%20x%3D%22131%22%20y%3D%22168%22%20width%3D%221.6%22%20height%3D%2244%22%2F%3E%3Crect%20x%3D%22179%22%20y%3D%22168%22%20width%3D%221.6%22%20height%3D%2244%22%2F%3E%3Crect%20x%3D%22227%22%20y%3D%22168%22%20width%3D%221.6%22%20height%3D%2244%22%2F%3E%3Crect%20x%3D%22275%22%20y%3D%22168%22%20width%3D%221.6%22%20height%3D%2244%22%2F%3E%3Crect%20x%3D%22323%22%20y%3D%22168%22%20width%3D%221.6%22%20height%3D%2244%22%2F%3E%3Crect%20x%3D%22371%22%20y%3D%22168%22%20width%3D%221.6%22%20height%3D%2244%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22M80%20218%20L90%20168%20H136%20V146%20H196%20V152%20H238%20V132%20H272%20V152%20H306%20V126%20H338%20V168%20H392%20L402%20218%22%20fill%3D%22none%22%20stroke%3D%22rgba%28214%2C84%2C74%2C.4%29%22%20stroke-width%3D%221.6%22%2F%3E%3Cg%20fill%3D%22rgba%28255%2C200%2C130%2C.55%29%22%3E%3Crect%20x%3D%22150%22%20y%3D%22153%22%20width%3D%226%22%20height%3D%224%22%2F%3E%3Crect%20x%3D%22162%22%20y%3D%22153%22%20width%3D%226%22%20height%3D%224%22%2F%3E%3Crect%20x%3D%22174%22%20y%3D%22153%22%20width%3D%226%22%20height%3D%224%22%2F%3E%3Crect%20x%3D%22186%22%20y%3D%22153%22%20width%3D%226%22%20height%3D%224%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
-  --x-grain:.45;
+  --x-scene:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20480%20320%22%20preserveAspectRatio%3D%22xMidYMax%20slice%22%3E%3Crect%20y%3D%22218%22%20width%3D%22480%22%20height%3D%22102%22%20fill%3D%22%230B1424%22%2F%3E%3Cg%20stroke%3D%22rgba%28120%2C160%2C220%2C.12%29%22%20stroke-width%3D%221.4%22%3E%3Cline%20x1%3D%220%22%20y1%3D%22236%22%20x2%3D%22480%22%20y2%3D%22234%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22258%22%20x2%3D%22480%22%20y2%3D%22260%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22282%22%20x2%3D%22480%22%20y2%3D%22280%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22304%22%20x2%3D%22480%22%20y2%3D%22302%22%2F%3E%3C%2Fg%3E%3Cpolygon%20points%3D%220%2C96%2046%2C118%2046%2C320%200%2C320%22%20fill%3D%22rgba%284%2C7%2C14%2C.92%29%22%2F%3E%3Cpolygon%20points%3D%22480%2C96%20434%2C118%20434%2C320%20480%2C320%22%20fill%3D%22rgba%284%2C7%2C14%2C.92%29%22%2F%3E%3Cpolygon%20points%3D%2246%2C116%2062%2C120%20210%2C218%20156%2C218%22%20fill%3D%22rgba%28190%2C215%2C255%2C.055%29%22%2F%3E%3Cpolygon%20points%3D%22434%2C116%20418%2C120%20300%2C218%20354%2C218%22%20fill%3D%22rgba%28190%2C215%2C255%2C.055%29%22%2F%3E%3Cpath%20d%3D%22M80%20218%20L90%20168%20L136%20168%20L136%20146%20L196%20146%20L196%20152%20L238%20152%20L238%20132%20L272%20132%20L272%20152%20L306%20152%20L306%20126%20L338%20126%20L338%20168%20L392%20168%20L402%20218%20Z%22%20fill%3D%22%2304060C%22%2F%3E%3Crect%20x%3D%2280%22%20y%3D%22212%22%20width%3D%22322%22%20height%3D%222.5%22%20fill%3D%22rgba%28214%2C84%2C74%2C.55%29%22%2F%3E%3Ccircle%20cx%3D%22316%22%20cy%3D%22140%22%20r%3D%222.6%22%20fill%3D%22rgba%28214%2C84%2C74%2C.85%29%22%2F%3E%3Ccircle%20cx%3D%2286%22%20cy%3D%22206%22%20r%3D%222%22%20fill%3D%22rgba%28120%2C220%2C180%2C.6%29%22%2F%3E%3Ccircle%20cx%3D%22396%22%20cy%3D%22206%22%20r%3D%222%22%20fill%3D%22rgba%28214%2C84%2C74%2C.7%29%22%2F%3E%3Cg%20stroke%3D%22rgba%28215%2C223%2C239%2C.32%29%22%20stroke-width%3D%220.9%22%3E%3Cline%20x1%3D%2260%22%20y1%3D%2266%22%20x2%3D%2260%22%20y2%3D%22226%22%2F%3E%3Cline%20x1%3D%2284%22%20y1%3D%2260%22%20x2%3D%2284%22%20y2%3D%22228%22%2F%3E%3Cline%20x1%3D%22108%22%20y1%3D%2256%22%20x2%3D%22108%22%20y2%3D%22230%22%2F%3E%3Cline%20x1%3D%22132%22%20y1%3D%2252%22%20x2%3D%22132%22%20y2%3D%22231%22%2F%3E%3Cline%20x1%3D%22156%22%20y1%3D%2250%22%20x2%3D%22156%22%20y2%3D%22232%22%2F%3E%3Cline%20x1%3D%22180%22%20y1%3D%2248%22%20x2%3D%22180%22%20y2%3D%22233%22%2F%3E%3Cline%20x1%3D%22204%22%20y1%3D%2246%22%20x2%3D%22204%22%20y2%3D%22234%22%2F%3E%3Cline%20x1%3D%22228%22%20y1%3D%2244%22%20x2%3D%22228%22%20y2%3D%22234%22%2F%3E%3Cline%20x1%3D%22252%22%20y1%3D%2244%22%20x2%3D%22252%22%20y2%3D%22234%22%2F%3E%3Cline%20x1%3D%22276%22%20y1%3D%2246%22%20x2%3D%22276%22%20y2%3D%22233%22%2F%3E%3Cline%20x1%3D%22300%22%20y1%3D%2248%22%20x2%3D%22300%22%20y2%3D%22232%22%2F%3E%3Cline%20x1%3D%22324%22%20y1%3D%2252%22%20x2%3D%22324%22%20y2%3D%22231%22%2F%3E%3Cline%20x1%3D%22348%22%20y1%3D%2256%22%20x2%3D%22348%22%20y2%3D%22230%22%2F%3E%3Cline%20x1%3D%22372%22%20y1%3D%2260%22%20x2%3D%22372%22%20y2%3D%22228%22%2F%3E%3Cline%20x1%3D%22396%22%20y1%3D%2266%22%20x2%3D%22396%22%20y2%3D%22226%22%2F%3E%3Cline%20x1%3D%22420%22%20y1%3D%2272%22%20x2%3D%22420%22%20y2%3D%22224%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22rgba%28230%2C235%2C250%2C.1%29%22%3E%3Crect%20x%3D%22131%22%20y%3D%22168%22%20width%3D%221.6%22%20height%3D%2244%22%2F%3E%3Crect%20x%3D%22179%22%20y%3D%22168%22%20width%3D%221.6%22%20height%3D%2244%22%2F%3E%3Crect%20x%3D%22227%22%20y%3D%22168%22%20width%3D%221.6%22%20height%3D%2244%22%2F%3E%3Crect%20x%3D%22275%22%20y%3D%22168%22%20width%3D%221.6%22%20height%3D%2244%22%2F%3E%3Crect%20x%3D%22323%22%20y%3D%22168%22%20width%3D%221.6%22%20height%3D%2244%22%2F%3E%3Crect%20x%3D%22371%22%20y%3D%22168%22%20width%3D%221.6%22%20height%3D%2244%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22M80%20218%20L90%20168%20H136%20V146%20H196%20V152%20H238%20V132%20H272%20V152%20H306%20V126%20H338%20V168%20H392%20L402%20218%22%20fill%3D%22none%22%20stroke%3D%22rgba%28214%2C84%2C74%2C.4%29%22%20stroke-width%3D%221.6%22%2F%3E%3Cg%20fill%3D%22rgba%28255%2C200%2C130%2C.55%29%22%3E%3Crect%20x%3D%22150%22%20y%3D%22153%22%20width%3D%226%22%20height%3D%224%22%2F%3E%3Crect%20x%3D%22162%22%20y%3D%22153%22%20width%3D%226%22%20height%3D%224%22%2F%3E%3Crect%20x%3D%22174%22%20y%3D%22153%22%20width%3D%226%22%20height%3D%224%22%2F%3E%3Crect%20x%3D%22186%22%20y%3D%22153%22%20width%3D%226%22%20height%3D%224%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
 }
 #ebook-converter-demo *{ box-sizing: border-box; }
 #ebook-converter-demo .x-sr{
@@ -93,9 +105,9 @@
 #ebook-converter-demo .x-seal{
   width:34px; height:34px; flex:none; border-radius:7px;
   background: var(--x-accentbg); color: var(--x-onaccent);
-  font-family: var(--x-serif); font-size:19px; font-weight:700;
   display:flex; align-items:center; justify-content:center;
 }
+#ebook-converter-demo .x-seal svg{ width:22px; height:22px; display:block; }
 #ebook-converter-demo .x-title{ font-family: var(--x-serif); font-size:17px; font-weight:700; letter-spacing:.5px; }
 #ebook-converter-demo .x-sub{ font-size:12px; color: var(--x-muted); }
 #ebook-converter-demo .x-topright{ display:flex; align-items:center; gap:8px; flex:none; }
@@ -106,7 +118,7 @@
   background: var(--x-paper); cursor: help;
 }
 #ebook-converter-demo .x-dot{ width:8px; height:8px; border-radius:50%; background: var(--x-moss); }
-#ebook-converter-demo .x-themes{ display:inline-flex; gap:4px; align-items:center; margin-right:6px; }
+#ebook-converter-demo .x-themes{ display:inline-flex; gap:4px; align-items:center; margin-right:6px; flex-wrap:wrap; }
 #ebook-converter-demo .x-theme{
   display:inline-flex; align-items:center; gap:6px; font:inherit; font-size:12px;
   color:var(--x-muted); background:transparent; border:1px solid transparent; border-radius:999px;
@@ -118,75 +130,6 @@
   box-shadow: inset 0 0 0 1px var(--x-accent);
 }
 #ebook-converter-demo .x-swatch{ width:12px; height:12px; border-radius:50%; border:1px solid var(--x-line); flex:none; }
-
-/* ── 品牌标识：方章 + 双向转换箭头 + 书脊折痕 ── */
-#ebook-converter-demo .x-seal{
-  display:flex; align-items:center; justify-content:center;
-}
-#ebook-converter-demo .x-seal svg{ width:22px; height:22px; display:block; }
-
-/* ── 材质颗粒层：SVG 噪点，软光混合，随主题调强度 ── */
-#ebook-converter-demo .x-grain{
-  position:absolute; inset:0; z-index:1; pointer-events:none;
-  background-image:var(--x-noise);
-  background-size:180px 180px;
-  opacity:var(--x-grain);
-  mix-blend-mode:soft-light;
-}
-
-/* ── Kindle · 悬浮毛玻璃 ── */
-#ebook-converter-demo[data-theme="kindle"] .x-frame{
-  border-radius:18px; border-color:rgba(27,27,24,.1);
-  box-shadow:0 18px 44px rgba(96,106,96,.22);
-}
-#ebook-converter-demo[data-theme="kindle"] :is(.x-top,.x-row,.x-drop,.x-action,.x-dlg,.x-toast){
-  backdrop-filter:blur(14px) saturate(1.15);
-  -webkit-backdrop-filter:blur(14px) saturate(1.15);
-}
-#ebook-converter-demo[data-theme="kindle"] .x-row{ border-color:rgba(27,27,24,.1); }
-#ebook-converter-demo[data-theme="kindle"] :is(.x-top,.x-row,.x-drop,.x-action){ box-shadow: inset 0 1px 0 rgba(255,255,255,.8); }
-#ebook-converter-demo[data-theme="kindle"] .x-primary{ border-radius:10px; }
-
-/* ── 三体 · 双栏控制台（HUD）── */
-#ebook-converter-demo[data-theme="santi"] .x-frame{ border-radius:4px; }
-#ebook-converter-demo[data-theme="santi"] .x-frame::before,
-#ebook-converter-demo[data-theme="santi"] .x-frame::after{
-  content:""; position:absolute; width:22px; height:22px; pointer-events:none; z-index:5;
-}
-#ebook-converter-demo[data-theme="santi"] .x-frame::before{ top:6px; left:6px; border-top:2px solid var(--x-accent); border-left:2px solid var(--x-accent); }
-#ebook-converter-demo[data-theme="santi"] .x-frame::after{ bottom:6px; right:6px; border-bottom:2px solid var(--x-accent); border-right:2px solid var(--x-accent); }
-#ebook-converter-demo[data-theme="santi"] .x-top{ border-bottom:1px solid var(--x-accent); }
-#ebook-converter-demo[data-theme="santi"] .x-title{ font-family:var(--x-mono); letter-spacing:6px; font-size:16px; }
-#ebook-converter-demo[data-theme="santi"] .x-sub{ font-family:var(--x-mono); letter-spacing:1px; }
-#ebook-converter-demo[data-theme="santi"] .x-main{
-  display:grid; grid-template-columns:minmax(210px,280px) 1fr; gap:12px 16px; align-items:start;
-}
-#ebook-converter-demo[data-theme="santi"] .x-drop{
-  grid-column:1; grid-row:1 / span 3; min-height:320px;
-  display:flex; flex-direction:column; justify-content:center;
-  border-style:solid; border-color:var(--x-accent); border-width:1px;
-  box-shadow:inset 0 0 0 1px rgba(214,84,74,.16), inset 0 0 30px rgba(214,84,74,.07);
-}
-#ebook-converter-demo[data-theme="santi"] .x-listhead,
-#ebook-converter-demo[data-theme="santi"] #x-list,
-#ebook-converter-demo[data-theme="santi"] .x-empty{ grid-column:2; }
-#ebook-converter-demo[data-theme="santi"] .x-listtitle::after{ content:" / QUEUE"; font-family:var(--x-mono); font-size:11px; color:var(--x-muted); }
-#ebook-converter-demo[data-theme="santi"] .x-row{
-  border-radius:2px;
-  clip-path:polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
-  background:linear-gradient(180deg, rgba(214,84,74,.06), rgba(214,84,74,0) 40%), var(--x-surface);
-}
-#ebook-converter-demo[data-theme="santi"] .x-name{ font-family:var(--x-mono); font-weight:700; letter-spacing:.5px; }
-#ebook-converter-demo[data-theme="santi"] .x-fmts{ font-family:var(--x-mono); letter-spacing:1px; }
-#ebook-converter-demo[data-theme="santi"] .x-dropicon{ color:var(--x-accent); }
-#ebook-converter-demo[data-theme="santi"] .x-pfill{ box-shadow:0 0 8px rgba(214,84,74,.55); }
-#ebook-converter-demo[data-theme="santi"] .x-ofill{ box-shadow:0 0 8px rgba(214,84,74,.45); }
-#ebook-converter-demo[data-theme="santi"] .x-primary{ border-radius:2px; letter-spacing:3px; }
-#ebook-converter-demo[data-theme="santi"] .x-go, #ebook-converter-demo[data-theme="santi"] .x-segbtn{ border-radius:2px; }
-@media (max-width:840px){
-  #ebook-converter-demo[data-theme="santi"] .x-main{ display:block; }
-  #ebook-converter-demo[data-theme="santi"] .x-drop{ min-height:0; }
-}
 /* ── buttons ── */
 #ebook-converter-demo .x-btn{
   display:inline-flex; align-items:center; justify-content:center; gap:6px;
@@ -197,8 +140,8 @@
 #ebook-converter-demo .x-btn:hover{ border-color: var(--x-muted); }
 #ebook-converter-demo .x-linkbtn{
   font: inherit; font-size:13px; color: var(--x-accent);
-  background:none; border:none; padding:6px 4px; text-decoration: underline;
-  text-underline-offset: 3px;
+  background:none; border:none; padding:6px 4px;
+  text-decoration: underline; text-underline-offset: 3px;
 }
 #ebook-converter-demo .x-primary{
   font: inherit; font-size:14px; font-weight:600;
@@ -214,7 +157,7 @@
 }
 #ebook-converter-demo .x-icobtn:hover{ color: var(--x-ink); border-color: var(--x-line); background: var(--x-paper); }
 /* ── main ── */
-#ebook-converter-demo .x-main{ padding:20px; max-width:1020px; margin:0 auto; width:100%; }
+#ebook-converter-demo .x-main{ padding: 20px; max-width:1020px; margin:0 auto; width:100%; }
 #ebook-converter-demo .x-drop{
   border: 1.5px dashed var(--x-line); border-radius: 12px;
   background: var(--x-dropbg);
@@ -335,7 +278,7 @@
   background: var(--x-surface); border:1px solid var(--x-line);
   border-left:3px solid var(--x-ink);
   border-radius:9px; padding:9px 13px; font-size:13px;
-  box-shadow: 0 4px 14px light-dark(rgba(38,34,29,.14), rgba(0,0,0,.4));
+  box-shadow: 0 4px 14px rgba(0,0,0,.3);
 }
 #ebook-converter-demo .x-toast.is-warn{ border-left-color: var(--x-clay); }
 #ebook-converter-demo .x-toast.is-ok{ border-left-color: var(--x-moss); }
@@ -394,19 +337,7 @@
       <span class="x-seal" aria-hidden="true">
         <svg viewBox="0 0 64 64" fill="none">
           <rect x="6" y="6" width="52" height="52" rx="5" style="fill:var(--x-accentbg)"/>
-          <g style="stroke:var(--x-onaccent)" stroke-width="4.6" stroke-linecap="round">
-            <path d="M11 14 Q18 16 19 22"/>
-            <path d="M10 28 Q17 30 19 35"/>
-            <path d="M12 41 Q18 43 20 49"/>
-            <path d="M40 10 L43 15"/>
-            <path d="M27 18 Q41 15 55 18"/>
-            <path d="M28 21 Q26 34 23 48"/>
-            <path d="M33 27 Q43 24 53 27"/>
-            <path d="M33 27 Q31 34 29 40"/>
-            <path d="M53 27 Q55 34 56 40"/>
-            <path d="M50 32 Q40 42 24 52"/>
-            <path d="M30 34 Q42 44 55 50"/>
-          </g>
+          <g style="stroke:var(--x-onaccent)" stroke-width="4.6" stroke-linecap="round"><path d="M12 12 Q16 14 17 18"/><path d="M10 24 Q15 26 16 30"/><path d="M11 36 Q17 36 25 40"/><path d="M39 9 L43 14"/><path d="M27 16 Q41 13 55 16"/><path d="M29 19 Q26 32 18 44"/><path d="M34 26 Q43 23 52 26"/><path d="M37 30 Q36 34 34 38"/><path d="M49 30 Q51 34 53 38"/><path d="M48 32 Q38 42 22 51"/><path d="M26 35 Q40 46 55 51"/></g>
         </svg>
       </span>
       <div>
@@ -417,7 +348,8 @@
     <div class="x-topright">
       <div class="x-themes" role="group" aria-label="颜色风格">
         <button type="button" class="x-theme cursor-interaction is-on" data-theme="night"><span class="x-swatch" style="background:#191512" aria-hidden="true"></span>夜读</button>
-        <button type="button" class="x-theme cursor-interaction" data-theme="kindle"><span class="x-swatch" style="background:#A8A49B" aria-hidden="true"></span>Kindle</button>
+        <button type="button" class="x-theme cursor-interaction" data-theme="kindle"><span class="x-swatch" style="background:#D6D4CC" aria-hidden="true"></span>Kindle·纸白</button>
+        <button type="button" class="x-theme cursor-interaction" data-theme="kindledark"><span class="x-swatch" style="background:#141311" aria-hidden="true"></span>Kindle·墨夜</button>
         <button type="button" class="x-theme cursor-interaction" data-theme="santi"><span class="x-swatch" style="background:#0A0E17" aria-hidden="true"></span>三体</button>
       </div>
       <span class="x-cal" data-tooltip="C:\Program Files\Calibre2\ebook-convert.exe（演示数据）"><span class="x-dot" aria-hidden="true"></span>Calibre 已就绪</span>
@@ -531,7 +463,6 @@
 
   var state = { tasks:[], to:null, running:false, seq:0 };
 
-  function esc(s){ return s; } // DOM built with textContent only
   function sizeFmt(n){
     if(n >= 1048576) return (n/1048576).toFixed(1) + " MB";
     if(n >= 1024) return Math.round(n/1024) + " KB";
@@ -831,7 +762,6 @@
   $("x-go").addEventListener("click", convert);
   $("x-clear").addEventListener("click", clearList);
 
-  // settings dialog
   var setDlg = $("x-setdlg");
   $("x-setbtn").addEventListener("click", function(){ setDlg.showModal(); });
   $("x-setclose").addEventListener("click", function(){ setDlg.close(); });
@@ -841,7 +771,6 @@
     toast("设置已保存（演示数据，不持久化）", "ok");
   });
 
-  // history dialog
   var histDlg = $("x-histdlg");
   function openHistory(){
     var body = $("x-histbody");
@@ -859,8 +788,8 @@
       row.appendChild(el("span", "x-hname", r.name));
       var p = el("span", "x-meta", r.pair);
       row.appendChild(p);
-      var s = el("span", r.st === "ok" ? "x-hst-ok" : "x-hst-bad", r.note);
-      row.appendChild(s);
+      var st = el("span", r.st === "ok" ? "x-hst-ok" : "x-hst-bad", r.note);
+      row.appendChild(st);
       body.appendChild(row);
     });
     histDlg.showModal();
@@ -869,21 +798,29 @@
   $("x-histclose").addEventListener("click", function(){ histDlg.close(); });
   $("x-histok").addEventListener("click", function(){ histDlg.close(); });
 
-  // ── 颜色风格切换（夜读 / Kindle / 三体）──
+  // ── 主题切换（纯视觉）──
+  var THEMES = ["night", "kindle", "kindledark", "santi"];
   var THEME_KEY = "ebookDemoTheme";
   function applyTheme(name){
-    if(["night","kindle","santi"].indexOf(name) < 0) name = "night";
+    if(THEMES.indexOf(name) < 0) name = "night";
     root.setAttribute("data-theme", name);
-    // Chromium 在 color-scheme 切换后 backdrop-filter 层可能渲染陈旧，强制重绘一次
-    var frame = root.querySelector(".x-frame");
-    if(frame){
-      frame.style.opacity = "0.99";
-      requestAnimationFrame(function(){ requestAnimationFrame(function(){ frame.style.opacity = ""; }); });
-    }
     Array.prototype.forEach.call(root.querySelectorAll(".x-theme"), function(b){
       b.classList.toggle("is-on", b.getAttribute("data-theme") === name);
     });
-    try{ localStorage.setItem(THEME_KEY, name); }catch(e){}
+    // Chromium 在 color-scheme 切换后 backdrop-filter 层可能渲染陈旧：
+    // 短暂移除再恢复各面板 backdrop-filter + 触碰背景层，强制重建合成层
+    var blurEls = root.querySelectorAll(".x-top,.x-row,.x-drop,.x-action,.x-dlg,.x-toast");
+    Array.prototype.forEach.call(blurEls, function(el){
+      el.style.backdropFilter = "none";
+      el.style.webkitBackdropFilter = "none";
+    });
+    setTimeout(function(){
+      Array.prototype.forEach.call(blurEls, function(el){
+        el.style.backdropFilter = "";
+        el.style.webkitBackdropFilter = "";
+      });
+    }, 80);
+    try { localStorage.setItem(THEME_KEY, name); } catch(e){}
   }
   Array.prototype.forEach.call(root.querySelectorAll(".x-theme"), function(b){
     b.addEventListener("click", function(){
@@ -892,7 +829,7 @@
     });
   });
   var savedTheme = null;
-  try{ savedTheme = localStorage.getItem(THEME_KEY); }catch(e){}
+  try { savedTheme = localStorage.getItem(THEME_KEY); } catch(e){}
   applyTheme(savedTheme || "night");
 
   render();
@@ -900,7 +837,6 @@
 })();
 </script>
 </div>
-
 </div>
 </body>
 </html>
