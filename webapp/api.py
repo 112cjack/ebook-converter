@@ -349,6 +349,51 @@ def browse():
     return jsonify({"current": str(path), "parent": parent, "entries": entries})
 
 
+@bp.post("/api/watch-convert")
+def watch_convert():
+    """把监听发现的违规文件（可转换档）按期望格式创建转换任务。
+
+    文件被复制进上传目录后走与手动上传完全相同的链路——监听文件夹中的
+    源文件保持原样（源文件永不删除约定）。
+    """
+    body = request.get_json(silent=True) or {}
+    requested = body.get("paths") or []
+    snap = _watcher().snapshot()
+    convertible = {v["path"]: v for v in snap.get("violations", []) if v["kind"] == "wrong_format"}
+    valid = [p for p in requested if p in convertible]
+    if not valid:
+        return jsonify({"error": "所选文件不在当前可转换的违规列表中"}), 400
+
+    manager = _manager()
+    if manager.resolve_engine() is None:
+        return jsonify({"error": "未检测到 Calibre，请先安装引擎", "engine": engine_state()}), 409
+
+    data = _settings_data()
+    raw_dir = str(body.get("output_dir") or data.get("output_dir") or "").strip()
+    if not raw_dir:
+        raw_dir = str(Path(current_app.extensions["base_dir"]) / "converted")
+    out_dir = Path(raw_dir)
+    if not out_dir.is_absolute():
+        return jsonify({"error": "输出目录必须是绝对路径"}), 400
+
+    ids = []
+    rejected = []
+    for item in valid:
+        try:
+            content = Path(item).read_bytes()
+        except OSError:
+            rejected.append({"name": Path(item).name, "reason": "文件暂时不可读"})
+            continue
+        record = manager.store_upload(Path(item).name, content)
+        ids.append(record["id"])
+    if not ids:
+        return jsonify({"error": "没有可转换的文件", "rejected": rejected}), 400
+    created = manager.create_tasks(ids, snap["format"], out_dir)
+    log.info("监听一键转换：%d 个违规文件 -> %s", len(created), snap["format"])
+    return jsonify({"tasks": [public_task(t) for t in created],
+                    "rejected": rejected}), 201
+
+
 @bp.post("/api/remove")
 def remove():
     """把上传从列表移除并删除临时文件；任务记录保留为历史。缺省清空全部可移除项。"""
@@ -362,6 +407,36 @@ def remove():
     busy = [uid for uid in requested if uid not in removable]
     manager.remove_uploads(to_remove)
     return jsonify({"removed": to_remove, "busy": busy})
+
+
+@bp.post("/api/open-file")
+def open_file():
+    """用系统默认程序打开一个已登记的输出文件（仅限服务端转换成功过的文件）。"""
+    body = request.get_json(silent=True) or {}
+    raw = str(body.get("path") or "").strip()
+    if not raw:
+        return jsonify({"error": "缺少 path 参数"}), 400
+    try:
+        path = Path(raw).resolve()
+    except OSError:
+        return jsonify({"error": "路径无效"}), 400
+    manager = _manager()
+    if str(path) not in manager.registered_files:
+        return jsonify({"error": "只能打开本程序转换产生的输出文件"}), 403
+    if not path.is_file():
+        return jsonify({"error": "文件不存在"}), 404
+    open_with_system(path)
+    return jsonify({"ok": True})
+
+
+def open_with_system(path):
+    """用系统默认程序打开文件/目录。"""
+    if sys.platform == "win32":
+        os.startfile(path)  # noqa: S606 - 本机工具打开用户已登记路径
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", str(path)])
+    else:
+        subprocess.Popen(["xdg-open", str(path)])
 
 
 @bp.post("/api/open-folder")
@@ -381,17 +456,8 @@ def open_folder():
         return jsonify({"error": "只能打开程序登记过的输出目录"}), 403
     if not path.is_dir():
         return jsonify({"error": "目录不存在，请先完成一次转换"}), 404
-    open_in_explorer(path)
+    open_with_system(path)
     return jsonify({"ok": True})
-
-
-def open_in_explorer(path):
-    if sys.platform == "win32":
-        os.startfile(path)  # noqa: S606 - 本机工具打开用户已登记目录
-    elif sys.platform == "darwin":
-        subprocess.Popen(["open", str(path)])
-    else:
-        subprocess.Popen(["xdg-open", str(path)])
 
 
 @bp.get("/api/settings")

@@ -70,6 +70,7 @@ class TaskManager:
         self.upload_order = []  # 保持列表展示顺序
         self.task_order = []
         self.registered_dirs = set()  # open-folder 只接受这里登记过的目录
+        self.registered_files = set()  # open-file 只接受这里登记过的输出文件
         self._queue = queue.Queue()
         self._seen_dst = {}     # 运行期内 dst -> 来源文件名，用于重名提示
         self._cancel_requests = set()  # 请求取消的任务 id（worker 通过 cancel_check 轮询）
@@ -259,6 +260,10 @@ class TaskManager:
 
         if status == ec.STATUS_OK:
             task["output_path"] = str(dst)
+            try:
+                self.registered_files.add(str(dst.resolve()))
+            except OSError:
+                self.registered_files.add(str(dst))
             self._finish(task_id, DONE, message=f"{message}；{warning}" if warning else message)
         elif status == ec.STATUS_SKIPPED:
             self._finish(task_id, SKIPPED, message=message)

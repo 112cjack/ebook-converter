@@ -380,7 +380,7 @@ class TestOpenFolder:
     def test_registered_path_opens(self, client, app_env, tmp_path, monkeypatch):
         set_fake_engine(app_env)
         opened = []
-        monkeypatch.setattr("webapp.api.open_in_explorer", lambda p: opened.append(p))
+        monkeypatch.setattr("webapp.api.open_with_system", lambda p: opened.append(p))
         out = tmp_path / "out"
         out.mkdir()
         upload_file(client, "a.epub")
@@ -672,6 +672,109 @@ class TestShortcut:
         )
         resp = app_env.test_client().post("/api/create-shortcut")
         assert resp.status_code == 500
+
+
+# ── 监听一键转换 ──
+
+
+class TestWatchConvert:
+    def test_convert_wrong_format_violation(self, client, app_env, tmp_path):
+        set_fake_engine(app_env)
+        folder = tmp_path / "书库"
+        folder.mkdir()
+        mobi = folder / "旧书.mobi"
+        mobi.write_bytes(b"x" * 100)
+        past = time.time() - 60
+        import os
+        os.utime(mobi, (past, past))
+        client.post("/api/watch", json={"enabled": True, "folder": str(folder), "format": "epub"})
+        client.get("/api/watch")  # 触发巡检，生成违规列表
+
+        out = tmp_path / "out"
+        patcher = pytest.MonkeyPatch()
+        patcher.setattr(ec, "convert_file", fake_convert_ok)
+        try:
+            resp = client.post("/api/watch-convert", json={"paths": [str(mobi)],
+                                                           "output_dir": str(out)})
+            assert resp.status_code == 201
+            assert resp.get_json()["tasks"][0]["format_out"] == "epub"
+            app_env.extensions["task_manager"].wait_idle()
+        finally:
+            patcher.undo()
+        assert resp.status_code == 201
+        tasks = resp.get_json()["tasks"]
+        assert tasks[0]["format_out"] == "epub"
+        app_env.extensions["task_manager"].wait_idle()
+        final = client.get("/api/tasks").get_json()["tasks"][0]
+        assert final["status"] == "done", (
+            final["status"], final["error"], final["error_detail"], final["message"])
+        assert (out / "旧书.epub").exists()
+        assert mobi.exists()  # 源文件永不删除（转换的是复制进上传目录的副本）
+        # 副本进了上传列表，走正常渲染/移除链路
+        listing = client.get("/api/tasks").get_json()
+        assert any(u["name"] == "旧书.mobi" for u in listing["uploads"])
+
+    def test_rejects_unconvertible_and_unknown_paths(self, client, app_env, tmp_path):
+        set_fake_engine(app_env)
+        folder = tmp_path / "书库"
+        folder.mkdir()
+        exe = folder / "坏.exe"
+        exe.write_bytes(b"x")
+        os_utime_past(exe)
+        client.post("/api/watch", json={"enabled": True, "folder": str(folder), "format": "epub"})
+        client.get("/api/watch")
+        resp = client.post("/api/watch-convert", json={"paths": [str(exe)]})
+        assert resp.status_code == 400  # 无法识别的文件不可转换
+        resp2 = client.post("/api/watch-convert", json={"paths": ["C:/不在列表.epub"]})
+        assert resp2.status_code == 400
+
+    def test_engine_missing_returns_409(self, client, app_env, tmp_path):
+        folder = tmp_path / "书库"
+        folder.mkdir()
+        mobi = folder / "a.mobi"
+        mobi.write_bytes(b"x")
+        os_utime_past(mobi)
+        client.post("/api/watch", json={"enabled": True, "folder": str(folder), "format": "epub"})
+        client.get("/api/watch")
+        resp = client.post("/api/watch-convert", json={"paths": [str(mobi)]})
+        assert resp.status_code == 409
+
+
+# ── 打开单个输出文件 ──
+
+
+class TestOpenFile:
+    def test_unregistered_path_forbidden(self, client, tmp_path):
+        target = tmp_path / "out" / "a.mobi"
+        target.parent.mkdir()
+        target.write_bytes(b"x" * 2048)
+        resp = client.post("/api/open-file", json={"path": str(target)})
+        assert resp.status_code == 403
+
+    def test_registered_output_opens(self, client, app_env, tmp_path, monkeypatch):
+        set_fake_engine(app_env)
+        opened = []
+        monkeypatch.setattr("webapp.api.open_with_system", lambda p: opened.append(p))
+        patcher = pytest.MonkeyPatch()
+        patcher.setattr(ec, "convert_file", fake_convert_ok)
+        try:
+            upload_file(client, "a.epub")
+            out = tmp_path / "out"
+            _resp, tasks = convert_and_wait(
+                client, app_env, {"format": "mobi", "output_dir": str(out)})
+        finally:
+            patcher.undo()
+        task = tasks[0]
+        assert task["status"] == "done"
+        resp = client.post("/api/open-file", json={"path": task["output_path"]})
+        assert resp.status_code == 200
+        assert opened == [Path(task["output_path"]).resolve()]
+
+    def test_missing_file_returns_404(self, client, app_env, tmp_path):
+        ghost = tmp_path / "ghost.mobi"
+        app_env.extensions["task_manager"].registered_files.add(str(ghost))
+        resp = client.post("/api/open-file", json={"path": str(ghost)})
+        assert resp.status_code == 404
 
 
 # ── 文件夹监听（F8）──
