@@ -1011,6 +1011,12 @@
   // ── 主题切换（纯视觉：读写 localStorage、切换 :root 的 data-theme）──
 
   var THEMES = ["night", "kindle", "kindledark", "santi"];
+  var QUOTES = {
+    night: "腹有诗书气自华 —— 苏轼《和董传留别》",
+    kindle: "纵一苇之所如，凌万顷之茫然 —— 苏轼《赤壁赋》",
+    kindledark: "明月几时有？把酒问青天 —— 苏轼《水调歌头》",
+    santi: "大江东去，浪淘尽，千古风流人物 —— 苏轼《念奴娇·赤壁怀古》"
+  };
 
   function applyTheme(name) {
     if (THEMES.indexOf(name) < 0) name = "night";
@@ -1039,6 +1045,8 @@
         el.style.display = "";
       });
     }, 80);
+    var quote = document.getElementById("x-quote");
+    if (quote) quote.textContent = QUOTES[name];
     try { localStorage.setItem("theme", name); } catch (e) {}
   }
 

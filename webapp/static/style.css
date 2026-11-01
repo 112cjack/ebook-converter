@@ -244,6 +244,13 @@ body{
 .x-uploading{ font-size: 12px; color: var(--x-muted); }
 .x-fmts{ margin-top: 14px; font-size: 12px; color: var(--x-muted); letter-spacing: .3px; }
 
+/* ── 主题诗句（可见 UI 层，随主题切换）── */
+.x-quote{
+  margin: 16px auto 0; text-align: center; max-width: 1020px;
+  font-family: var(--x-serif); font-size: 13px; letter-spacing: 3px;
+  color: var(--x-muted); opacity: .85;
+}
+
 /* ── list ── */
 .x-listhead{
   display: flex; align-items: center; justify-content: space-between;
