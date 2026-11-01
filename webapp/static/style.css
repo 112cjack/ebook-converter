@@ -418,6 +418,23 @@ body{
 .x-check{ display: flex; align-items: center; gap: 6px; font-weight: 400; font-size: 13px; }
 .x-watchrow2{ display: flex; gap: 8px; align-items: center; }
 .x-watchrow2 .x-input{ flex: 1; min-width: 0; }
+.x-ruleitem{
+  display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+  border: 1px solid var(--x-line); border-radius: 8px;
+  background: var(--x-paper); padding: 8px; margin-bottom: 6px;
+}
+.x-ruleitem .x-input{ flex: 1; min-width: 140px; }
+.x-ruleitem .x-input.x-rulefmt{ flex: 0 0 96px; }
+.x-ruleitem .x-check{ white-space: nowrap; }
+.x-presetsel{ display: flex; align-items: center; gap: 8px; }
+.x-presetsel .x-input{ width: auto; min-width: 120px; min-height: 30px; padding: 3px 8px; }
+.x-introstep{ display: flex; gap: 10px; align-items: flex-start; font-size: 13px; }
+.x-intronum{
+  width: 20px; height: 20px; flex: none; border-radius: 50%;
+  background: var(--x-sealbg); color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+}
 
 /* ── toasts ── */
 .x-toasts{

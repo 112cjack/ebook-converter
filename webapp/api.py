@@ -129,6 +129,7 @@ def get_status():
         "app": "书渡",
         "engine": engine_state(),
         "output_formats": list(ec.OUTPUT_FORMATS),
+        "conversion_presets": list(ec.CONVERSION_PRESETS.keys()),
         "input_extensions": sorted(ec.INPUT_EXTENSIONS),
         "settings": public_settings(data),
         "frozen": bool(getattr(sys, "frozen", False)),

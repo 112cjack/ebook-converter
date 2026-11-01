@@ -89,8 +89,16 @@
 
 <div class="x-action">
   <div class="x-fmtgroup">
-    <span class="x-fmtlabel" id="x-fmtlabel">输出格式</span>
-    <div class="x-seg" id="x-seg" role="group" aria-labelledby="x-fmtlabel"></div>
+      <span class="x-fmtlabel" id="x-fmtlabel">输出格式</span>
+      <div class="x-presetsel">
+        <span class="x-fmtlabel">阅读设备</span>
+        <select class="x-input" id="x-preset" aria-label="阅读设备优化">
+          <option value="default">自动</option>
+          <option value="kindle">Kindle</option>
+          <option value="eink">电子墨水屏</option>
+        </select>
+      </div>
+      <div class="x-seg" id="x-seg" role="group" aria-labelledby="x-fmtlabel"></div>
     <div class="x-helper" id="x-helper">请先选择输出格式</div>
     <div class="x-helper" id="x-outdir-hint" title="转换结果将保存到此处">将输出到：<span id="x-outdir-text">默认目录</span> <button class="x-linkbtn" id="x-browsebtn" type="button">选择目录</button></div>
   </div>
@@ -123,15 +131,9 @@
       <input class="x-input" id="x-limit" type="number" min="1" max="4096" value="200">
     </label>
     <div class="x-field">文件夹监听（自动检查文件夹里的文件格式）
-      <label class="x-check"><input type="checkbox" id="x-watchon"> 启用监听</label>
-      <div class="x-watchrow">
-        <input class="x-input mono" id="x-watchfolder" placeholder="要监听的文件夹（留空不监听）">
-        <button class="x-btn x-btnsm" id="x-watchbrowse" type="button">浏览</button>
-      </div>
-      <label class="x-check">期望格式
-        <select class="x-input" id="x-watchformat"></select>
-      </label>
-      <p class="x-hint">文件夹里出现不是该格式的文件（或程序无法转换的文件）时提示你；重启后自动恢复。</p>
+      <div id="x-watchrules"></div>
+      <button class="x-btn x-btnsm" id="x-watchaddrule" type="button">添加监听文件夹</button>
+      <p class="x-hint">文件夹里出现不是期望格式的文件（或程序无法转换的文件）时提示你；勾选「自动转换」会直接把可转换的不符文件转成期望格式（源文件保持不变）。规则随程序记住，重启后自动恢复。</p>
     </div>
     <p class="x-hint">全部转换在本机完成，文件不会上传到任何服务器。</p>
     <button class="x-btn" id="x-mkshortcut" type="button" hidden>创建桌面快捷方式（方便下次找到程序）</button>
@@ -149,6 +151,7 @@
   </div>
   <div class="x-dlgbody" id="x-histbody"></div>
   <div class="x-dlgfoot">
+    <button class="x-btn" id="x-histcsv" type="button">导出 CSV</button>
     <button class="x-btn" id="x-histok" type="button">关闭</button>
   </div>
 </dialog>
@@ -168,6 +171,21 @@
   <div class="x-dlgfoot">
     <button class="x-btn" id="x-browsecancel" type="button">取消</button>
     <button class="x-primary x-btnsm" id="x-browseok" type="button">选择此目录</button>
+  </div>
+</dialog>
+
+<dialog id="x-introdlg" class="x-dlg" aria-labelledby="x-introtitle">
+  <div class="x-dlghead">
+    <span class="x-dlgtitle" id="x-introtitle">欢迎使用书渡</span>
+  </div>
+  <div class="x-dlgbody">
+    <div class="x-introstep"><span class="x-intronum">1</span><span><b>导入</b>　把电子书拖到页面中间的虚线框，或点「选择文件」，一次可以选多个</span></div>
+    <div class="x-introstep"><span class="x-intronum">2</span><span><b>选择</b>　在底部选输出格式；有需要再挑「阅读设备」优化排版</span></div>
+    <div class="x-introstep"><span class="x-intronum">3</span><span><b>转换</b>　点「开始转换」，完成后可直接打开文件或输出文件夹</span></div>
+    <p class="x-hint">进阶：设置里可以开启「文件夹监听」（自动检查文件夹格式并一键转换），顶栏可切换三套配色主题。</p>
+  </div>
+  <div class="x-dlgfoot">
+    <button class="x-primary x-btnsm" id="x-introok" type="button">开始使用</button>
   </div>
 </dialog>
 

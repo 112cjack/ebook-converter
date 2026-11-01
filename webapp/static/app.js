@@ -34,9 +34,11 @@
     uploading: false,
     frozen: false,
     settings: {},
+    preset: "default",     // 阅读设备优化（引擎层 CONVERSION_PRESETS 键）
     watch: null,          // GET /api/watch 快照
     watchTimer: null,
     watchOpen: false,     // 状态卡违规列表展开状态
+    watchBrowseRow: null, // 设置对话框中当前浏览目标所在的规则行
     browseTarget: "output", // 目录浏览器当前服务的目标：output | watch
   };
 
@@ -470,7 +472,7 @@
   function openBrowse(target) {
     state.browseTarget = target || "output";
     browseCurrent = state.browseTarget === "watch"
-      ? $("x-watchfolder").value.trim() || null
+      ? (currentWatchFolderInput() ? currentWatchFolderInput().value.trim() || null : null)
       : (state.outputDir || state.lastOutputDir || null);
     browseParent = null;
     $("x-browsedlg").showModal();
@@ -506,7 +508,8 @@
   function chooseBrowse() {
     if (browseCurrent) {
       if (state.browseTarget === "watch") {
-        $("x-watchfolder").value = browseCurrent;
+        var input = currentWatchFolderInput();
+        if (input) input.value = browseCurrent;
       } else {
         state.outputDir = browseCurrent;
         renderOutdirHint();
@@ -564,18 +567,21 @@
       return;
     }
     card.hidden = false;
-    var meta;
-    if (w.reachable === false) {
-      meta = "文件夹暂时不可达：" + w.folder;
-    } else {
-      var n = (w.violations || []).length;
-      meta = w.folder + " · 期望 " + fmtLabel(w.format) +
-        (n ? " · " + n + " 个不符文件" : " · 格式全部符合");
-    }
-    $("x-watchmeta").textContent = meta;
-    $("x-watchtitle").textContent = "监听中";
-    var list = $("x-watchlist");
     var violations = w.violations || [];
+    var metaParts = w.rules.map(function (r) {
+      var count = violations.filter(function (v) { return v.rule_id == r.id; }).length;
+      return r.folder.replace(/[\\/]+$/, "") + " · 期望 " + fmtLabel(r.format) +
+        (count ? "（" + count + " 个不符）" : "（符合）");
+    });
+    if (w.unreachable && w.unreachable.length) {
+      metaParts.push("暂时不可达：" + w.unreachable.join("、"));
+    }
+    if (w.auto_converted && w.auto_converted.length) {
+      metaParts.push("已自动转换：" + w.auto_converted.join("、"));
+    }
+    $("x-watchmeta").textContent = metaParts.join("　|　");
+    $("x-watchtitle").textContent = "监听中（" + w.rules.length + " 条规则）";
+    var list = $("x-watchlist");
     if (violations.length && w.fresh && w.fresh.length) {
       toast("监听发现 " + w.fresh.length + " 个不符文件，请查看监听卡", "warn");
     }
@@ -589,11 +595,11 @@
       var flag = el("span", "x-flagwarn", KIND_LABEL[v.kind] || v.kind);
       row.appendChild(flag);
       row.appendChild(el("span", "x-name", v.name));
-      row.appendChild(el("span", "", v.path));
+      row.appendChild(el("span", "", v.path + " · 期望 " + fmtLabel(v.rule_format)));
       if (v.kind === "wrong_format") {
         var btn = el("button", "x-mini", "转换");
         btn.type = "button";
-        btn.title = "按期望格式 " + fmtLabel(w.format) + " 转换此文件（原文件保持不变）";
+        btn.title = "按期望格式 " + fmtLabel(v.rule_format) + " 转换此文件（原文件保持不变）";
         btn.addEventListener("click", function () { watchConvert([v.path]); });
         row.appendChild(btn);
       }
@@ -613,21 +619,89 @@
     $("x-watchtoggle").textContent = state.watchOpen ? "收起" : "查看不符文件";
   }
 
+  // ── 设置里的监听规则列表 ──
+
+  function currentWatchFolderInput() {
+    var row = state.watchBrowseRow;
+    return row && row.isConnected ? row.querySelector('[data-role="folder"]') : null;
+  }
+
+  function renderWatchRules(rules) {
+    var box = $("x-watchrules");
+    box.textContent = "";
+    (rules || []).forEach(function (rule) {
+      box.appendChild(watchRuleRow(rule.folder || "", rule.format || "epub",
+                                   !!rule.auto_convert));
+    });
+  }
+
+  function watchRuleRow(folder, fmt, autoConvert) {
+    var row = el("div", "x-ruleitem");
+    var input = el("input", "x-input mono");
+    input.type = "text";
+    input.placeholder = "要监听的文件夹完整路径";
+    input.value = folder;
+    input.setAttribute("data-role", "folder");
+    var browse = el("button", "x-btn x-btnsm", "浏览");
+    browse.type = "button";
+    browse.addEventListener("click", function () {
+      state.watchBrowseRow = row;
+      openBrowse("watch");
+    });
+    var fmtSel = el("select", "x-input x-rulefmt");
+    fmtSel.setAttribute("aria-label", "期望格式");
+    state.outputFormats.forEach(function (f) {
+      var opt = el("option", "", fmtLabel(f));
+      opt.value = f;
+      if (f === fmt) opt.selected = true;
+      fmtSel.appendChild(opt);
+    });
+    fmtSel.setAttribute("data-role", "format");
+    var check = el("label", "x-check");
+    var cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = autoConvert;
+    cb.setAttribute("data-role", "auto");
+    check.appendChild(cb);
+    check.appendChild(document.createTextNode("自动转换"));
+    var del = el("button", "x-icobtn");
+    del.type = "button";
+    del.setAttribute("aria-label", "删除此规则");
+    del.appendChild(icon("x"));
+    del.addEventListener("click", function () { row.parentNode.removeChild(row); });
+    row.appendChild(input);
+    row.appendChild(browse);
+    row.appendChild(fmtSel);
+    row.appendChild(check);
+    row.appendChild(del);
+    // 行内输入框聚焦时记录为浏览目标
+    input.addEventListener("focus", function () {
+      state.watchBrowseRow = row;
+    });
+    return row;
+  }
+
+  function collectWatchRules() {
+    var rules = [];
+    Array.prototype.forEach.call($("x-watchrules").children, function (row) {
+      var folder = row.querySelector('[data-role="folder"]').value.trim();
+      var format = row.querySelector('[data-role="format"]').value;
+      var auto = row.querySelector('[data-role="auto"]').checked;
+      if (folder) rules.push({ folder: folder, format: format, auto_convert: auto });
+    });
+    return rules;
+  }
+
   function saveWatchFromSettings() {
-    var body = {
-      enabled: $("x-watchon").checked,
-      folder: $("x-watchfolder").value.trim(),
-      format: $("x-watchformat").value,
-    };
     return api("/api/watch", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ rules: collectWatchRules() }),
     }).then(function (w) {
       state.watch = w;
       renderWatch(w);
       scheduleWatchPoll();
-      if (w.enabled) toast("文件夹监听已启用", "ok");
+      if (w.enabled) toast("文件夹监听已启用（" + w.rules.length + " 条规则）", "ok");
     });
   }
 
@@ -706,7 +780,7 @@
       return !u.removed && !latestTaskOf(u.id);
     }).map(function (u) { return u.id; });
     if (!waiting.length) { toast("没有待转换的文件", "warn"); return; }
-    var body = { format: state.to, upload_ids: waiting };
+    var body = { format: state.to, upload_ids: waiting, preset: state.preset || "default" };
     var outDir = state.outputDir || state.lastOutputDir;
     if (outDir) body.output_dir = outDir;
     api("/api/convert", {
@@ -791,9 +865,7 @@
   function openSettings() {
     var watchReady = api("/api/watch").then(function (w) {
       state.watch = w;
-      $("x-watchon").checked = !!w.enabled;
-      $("x-watchfolder").value = w.folder || "";
-      renderWatchFormatOptions(w.format);
+      renderWatchRules(w.rules || []);
       scheduleWatchPoll();
       return w;
     }).catch(function (err) {
@@ -809,17 +881,6 @@
     }).then(function () {
       $("x-setdlg").showModal();
     }).catch(function (err) { if (!err.network) toast(err.message, "warn"); });
-  }
-
-  function renderWatchFormatOptions(selected) {
-    var select = $("x-watchformat");
-    select.textContent = "";
-    state.outputFormats.forEach(function (fmt) {
-      var opt = el("option", "", fmtLabel(fmt));
-      opt.value = fmt;
-      if (fmt === selected) opt.selected = true;
-      select.appendChild(opt);
-    });
   }
 
   function saveSettings() {
@@ -912,7 +973,9 @@
   $("x-clear").addEventListener("click", clearList);
   $("x-openout").addEventListener("click", function () { openFolder(state.outputDir || state.lastOutputDir); });
   $("x-browsebtn").addEventListener("click", function () { openBrowse("output"); });
-  $("x-watchbrowse").addEventListener("click", function () { openBrowse("watch"); });
+  $("x-watchaddrule").addEventListener("click", function () {
+    $("x-watchrules").appendChild(watchRuleRow("", state.outputFormats[0] || "epub", false));
+  });
   $("x-watchtoggle").addEventListener("click", function () {
     state.watchOpen = !state.watchOpen;
     if (state.watch) renderWatch(state.watch);
@@ -935,6 +998,17 @@
   $("x-histbtn").addEventListener("click", openHistory);
   $("x-histclose").addEventListener("click", function () { $("x-histdlg").close(); });
   $("x-histok").addEventListener("click", function () { $("x-histdlg").close(); });
+  $("x-histcsv").addEventListener("click", function () {
+    var link = document.createElement("a");
+    link.href = "/api/history.csv";
+    link.download = "";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
+  $("x-preset").addEventListener("change", function (e) {
+    state.preset = e.target.value || "default";
+  });
 
   // ── 引擎安装引导 ──
 
@@ -1063,4 +1137,13 @@
   // ── 启动 ──
   loadStatus().then(refreshTasks, refreshTasks);
   loadWatch();
+  try {
+    if (!localStorage.getItem("seen_intro")) {
+      $("x-introdlg").showModal();
+      $("x-introok").addEventListener("click", function () {
+        $("x-introdlg").close();
+        try { localStorage.setItem("seen_intro", "1"); } catch (e) { /* 隐私模式 */ }
+      });
+    }
+  } catch (e) { /* localStorage 不可用时跳过引导 */ }
 })();
