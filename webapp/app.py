@@ -2,6 +2,9 @@
 """启动入口：绑定本机端口并自动打开浏览器。
 
     python -m webapp.app
+
+优先使用 waitress（生产级 WSGI 服务器，随依赖安装）；未安装时回退到
+Flask 自带的开发服务器（单用户本地场景可用）。
 """
 
 import socket
@@ -28,6 +31,17 @@ def find_free_port(start=DEFAULT_PORT, tries=PORT_TRIES):
     return None
 
 
+def serve(app, port):
+    """启动 HTTP 服务：优先 waitress，回退 Flask 开发服务器。返回所用服务器名。"""
+    try:
+        from waitress import serve as waitress_serve
+    except ImportError:
+        app.run(host="127.0.0.1", port=port, debug=False, use_reloader=False, threaded=True)
+        return "flask-dev"
+    waitress_serve(app, host="127.0.0.1", port=port, threads=4, clear_untrusted_proxy_headers=True)
+    return "waitress"
+
+
 def main():
     app = create_app()
     port = find_free_port()
@@ -40,7 +54,8 @@ def main():
     print("浏览器未自动打开时，请手动复制上面的地址到浏览器。")
     print("关闭本窗口即退出程序；转换过程中请勿关闭。")
     threading.Timer(1.2, lambda: webbrowser.open(url)).start()
-    app.run(host="127.0.0.1", port=port, debug=False, use_reloader=False, threaded=True)
+    server = serve(app, port)
+    print(f"服务已停止（{server}）")
     return 0
 
 

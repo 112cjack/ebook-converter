@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div class="x-grain" aria-hidden="true"></div>
 <svg xmlns="http://www.w3.org/2000/svg" class="x-sprite" aria-hidden="true">
   <symbol id="i-book-open" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
   <symbol id="i-arrow-right" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
@@ -36,11 +37,16 @@
       </svg>
     </span>
     <div>
-      <div class="x-title">电子书转换器</div>
+      <div class="x-title">书渡</div>
       <div class="x-sub">本地转换 · 文件不出电脑</div>
     </div>
   </div>
   <div class="x-topright">
+    <div class="x-themes" role="group" aria-label="颜色风格">
+      <button class="x-theme is-on" type="button" data-theme="night"><span class="x-swatch" style="background:#191512" aria-hidden="true"></span>夜读</button>
+      <button class="x-theme" type="button" data-theme="kindle"><span class="x-swatch" style="background:#A8A49B" aria-hidden="true"></span>Kindle</button>
+      <button class="x-theme" type="button" data-theme="santi"><span class="x-swatch" style="background:#0A0E17" aria-hidden="true"></span>三体</button>
+    </div>
     <span class="x-cal" id="x-cal" title=""><span class="x-dot" aria-hidden="true"></span><span id="x-caltext">正在检测 Calibre…</span></span>
     <button class="x-btn" id="x-histbtn" type="button"><svg class="ic"><use href="#i-history"/></svg>历史</button>
     <button class="x-btn" id="x-setbtn" type="button"><svg class="ic"><use href="#i-sliders"/></svg>设置</button>

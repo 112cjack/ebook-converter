@@ -903,6 +903,34 @@
   $("x-installportable").addEventListener("click", function () { installEngine("portable"); });
   $("x-installwinget").addEventListener("click", function () { installEngine("winget"); });
 
+  // ── 主题切换（纯视觉：读写 localStorage、切换 :root 的 data-theme）──
+
+  var THEMES = ["night", "kindle", "santi"];
+
+  function applyTheme(name) {
+    if (THEMES.indexOf(name) < 0) name = "night";
+    document.documentElement.setAttribute("data-theme", name);
+    Array.prototype.forEach.call(document.querySelectorAll(".x-theme"), function (b) {
+      b.classList.toggle("is-on", b.getAttribute("data-theme") === name);
+    });
+    // Chromium 在 color-scheme 切换后 backdrop-filter 层可能渲染陈旧，强制重绘一次
+    document.body.style.opacity = "0.99";
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { document.body.style.opacity = ""; });
+    });
+    try { localStorage.setItem("theme", name); } catch (e) {}
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll(".x-theme"), function (b) {
+    b.addEventListener("click", function () {
+      applyTheme(b.getAttribute("data-theme"));
+    });
+  });
+
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem("theme"); } catch (e) {}
+  applyTheme(savedTheme || "night");
+
   // ── 启动 ──
   loadStatus().then(refreshTasks, refreshTasks);
   loadWatch();
