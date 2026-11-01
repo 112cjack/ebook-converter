@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-"""设置项读写：默认输出目录、引擎路径、上传大小上限，JSON 文件持久化。
+"""设置项读写：默认输出目录、引擎路径、上传大小上限、文件夹监听规则。
 
-设置文件保存在程序基目录下，字段与界面设置对话框一一对应；
-读取时逐字段回退到默认值，文件缺失或损坏不视为错误。
+监听规则自 V1.3 起为列表结构（watch_rules）；V1.2 的单规则字段
+（watch_enabled/watch_folder/watch_format）读取时一次性迁移，不再使用。
 """
 
 import json
 import sys
+import uuid
 from pathlib import Path
 
 DEFAULT_UPLOAD_LIMIT_MB = 200
@@ -19,15 +20,13 @@ DEFAULTS = {
     "output_dir": "",
     "engine_path": "",
     "upload_limit_mb": DEFAULT_UPLOAD_LIMIT_MB,
-    # 文件夹监听（F8）：期望文件夹内文件全部为某格式
-    "watch_enabled": False,
-    "watch_folder": "",
-    "watch_format": "epub",
+    # 文件夹监听（F8）：每条规则要求某文件夹内文件全部为某格式
+    "watch_rules": [],
     "watch_interval": 5,
 }
 
-# 布尔字段读取时强转，避免 JSON 手改出非布尔值
-BOOL_FIELDS = ("watch_enabled",)
+# 旧单规则字段：仅用于从 V1.2 settings.json 迁移，读出后不再写回
+LEGACY_WATCH_FIELDS = ("watch_enabled", "watch_folder", "watch_format")
 
 
 def base_dir():
@@ -49,6 +48,21 @@ def clamp_upload_limit(value):
     return max(MIN_UPLOAD_LIMIT_MB, min(MAX_UPLOAD_LIMIT_MB, limit))
 
 
+def migrate_watch(data):
+    """V1.2 单规则字段一次性迁移为 watch_rules 列表（缺省补空列表）。"""
+    if not data.get("watch_rules"):
+        rules = []
+        if str(data.get("watch_folder") or "").strip():
+            rules.append({
+                "id": uuid.uuid4().hex[:12],
+                "folder": str(data["watch_folder"]).strip(),
+                "format": str(data.get("watch_format") or "epub").strip().lower(),
+                "auto_convert": False,
+            })
+        data["watch_rules"] = rules
+    return data
+
+
 def load(base_dir=None):
     """读取设置，逐字段回退默认值；文件不存在或损坏时返回默认设置。"""
     data = dict(DEFAULTS)
@@ -62,8 +76,7 @@ def load(base_dir=None):
             if isinstance(raw, dict) and raw.get(key) is not None:
                 data[key] = raw[key]
     data["upload_limit_mb"] = clamp_upload_limit(data["upload_limit_mb"])
-    for key in BOOL_FIELDS:
-        data[key] = bool(data[key])
+    migrate_watch(data)
     return data
 
 
@@ -71,7 +84,8 @@ def save(data, base_dir=None):
     """把设置写入 JSON 文件（UTF-8，无 BOM）。"""
     payload = {key: data.get(key, DEFAULTS[key]) for key in DEFAULTS}
     payload["upload_limit_mb"] = clamp_upload_limit(payload["upload_limit_mb"])
-    payload["watch_enabled"] = bool(payload["watch_enabled"])
+    if not isinstance(payload["watch_rules"], list):
+        payload["watch_rules"] = []
     settings_path(base_dir).write_text(
         json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
     )

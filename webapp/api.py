@@ -6,6 +6,8 @@
 的就近扩展，已在技术方案文档补记）。
 """
 
+import csv
+import io
 import logging
 import os
 import shutil
@@ -185,7 +187,8 @@ def convert():
 
     try:
         created = manager.create_tasks(ids, fmt, out_dir,
-                                       overwrite=bool(body.get("overwrite")))
+                                       overwrite=bool(body.get("overwrite")),
+                                       preset=str(body.get("preset") or "default"))
     except ec.EngineNotFoundError as exc:
         return jsonify({"error": str(exc), "engine": engine_state()}), 409
     except ValueError as exc:
@@ -214,44 +217,83 @@ def get_watch():
     每次查询同步执行一轮巡检（单层目录扫描毫秒级），保证页面轮询拿到实时结果；
     后台线程仅按间隔兜底维持 fresh 提示语义。
     """
-    _config, _state = _watcher().scan_once()
+    _watcher().scan_once()
     return jsonify(_watcher().snapshot())
+
+
+@bp.get("/api/history.csv")
+def history_csv():
+    """导出本次运行的转换历史为 CSV（UTF-8 with BOM，Excel 直接打开不乱码）。"""
+    _uploads, tasks = _manager().snapshot()
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["时间", "文件名", "源格式", "目标格式", "状态", "结果", "输出路径"])
+    for task in tasks:
+        ts = task.get("finished_at") or task.get("created_at") or 0
+        writer.writerow([
+            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts)) if ts else "",
+            task["name"],
+            task["format_in"],
+            task["format_out"],
+            tasks_mod.STATUS_LABEL[task["status"]],
+            task["message"] or task["error"] or "",
+            task["output_path"] if task["status"] == "done" else "",
+        ])
+    return current_app.response_class(
+        "\ufeff" + buf.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=shudu-history.csv"},
+    )
 
 
 @bp.post("/api/watch")
 def post_watch():
-    """启用/停用/修改文件夹监听规则并持久化（重启后自动恢复监听）。"""
+    """整体提交监听规则列表并持久化（重启后自动恢复监听）。
+
+    body: {"rules": [{"folder", "format", "auto_convert"}], "interval": 5~60}
+    """
     body = request.get_json(silent=True) or {}
     data = _settings_data()
 
-    if "enabled" in body:
-        data["watch_enabled"] = bool(body["enabled"])
-    if "folder" in body:
-        value = str(body["folder"] or "").strip()
-        if value and not Path(value).is_absolute():
+    raw_rules = body.get("rules")
+    if raw_rules is None:
+        return jsonify({"error": "缺少 rules 列表"}), 400
+    if not isinstance(raw_rules, list):
+        return jsonify({"error": "rules 必须是列表"}), 400
+
+    rules, seen = [], set()
+    for item in raw_rules:
+        if not isinstance(item, dict):
+            return jsonify({"error": "规则条目格式不正确"}), 400
+        folder = str(item.get("folder") or "").strip()
+        fmt = str(item.get("format") or "").strip().lower()
+        if not folder:
+            return jsonify({"error": "监听文件夹不能为空"}), 400
+        if not Path(folder).is_absolute():
             return jsonify({"error": "监听文件夹必须是绝对路径"}), 400
-        data["watch_folder"] = value
-    if "format" in body:
-        value = str(body["format"] or "").strip().lower()
-        if value not in ec.OUTPUT_FORMATS:
-            return jsonify({"error": "期望格式不在支持列表内"}), 400
-        data["watch_format"] = value
+        if fmt not in ec.OUTPUT_FORMATS:
+            return jsonify({"error": f"期望格式 {fmt} 不在支持列表内"}), 400
+        key = folder.lower()
+        if key in seen:
+            return jsonify({"error": f"监听文件夹重复：{folder}"}), 400
+        seen.add(key)
+        rules.append({"id": len(rules) + 1, "folder": folder, "format": fmt,
+                      "auto_convert": bool(item.get("auto_convert"))})
+
     if "interval" in body:
         try:
-            value = int(body["interval"])
+            interval = int(body["interval"])
         except (TypeError, ValueError):
             return jsonify({"error": "扫描间隔必须是整数（秒）"}), 400
-        if not (watcher_mod.MIN_INTERVAL <= value <= watcher_mod.MAX_INTERVAL):
+        if not (watcher_mod.MIN_INTERVAL <= interval <= watcher_mod.MAX_INTERVAL):
             return jsonify({"error": "扫描间隔需在 5~60 秒之间"}), 400
-        data["watch_interval"] = value
+        data["watch_interval"] = interval
 
-    if data["watch_enabled"] and not data["watch_folder"]:
-        return jsonify({"error": "启用监听前请先选择文件夹"}), 400
-
+    data["watch_rules"] = rules
     settings_mod.save(data, base_dir=current_app.extensions["base_dir"])
-    config, _state = _watcher().scan_once()
-    log.info("监听规则已保存：enabled=%s folder=%r format=%s",
-             config["enabled"], config["folder"], config["format"])
+    _watcher().scan_once()
+    log.info("监听规则已保存：%d 条（含自动转换 %d 条）",
+             len(rules), sum(1 for r in rules if r["auto_convert"]))
     return jsonify(_watcher().snapshot())
 
 
@@ -351,7 +393,7 @@ def browse():
 
 @bp.post("/api/watch-convert")
 def watch_convert():
-    """把监听发现的违规文件（可转换档）按期望格式创建转换任务。
+    """把监听发现的违规文件（可转换档）按各自规则的期望格式创建转换任务。
 
     文件被复制进上传目录后走与手动上传完全相同的链路——监听文件夹中的
     源文件保持原样（源文件永不删除约定）。
@@ -376,8 +418,8 @@ def watch_convert():
     if not out_dir.is_absolute():
         return jsonify({"error": "输出目录必须是绝对路径"}), 400
 
-    ids = []
     rejected = []
+    ids_by_format = {}
     for item in valid:
         try:
             content = Path(item).read_bytes()
@@ -385,13 +427,16 @@ def watch_convert():
             rejected.append({"name": Path(item).name, "reason": "文件暂时不可读"})
             continue
         record = manager.store_upload(Path(item).name, content)
-        ids.append(record["id"])
-    if not ids:
+        fmt = convertible[item]["rule_format"]
+        ids_by_format.setdefault(fmt, []).append(record["id"])
+    if not ids_by_format:
         return jsonify({"error": "没有可转换的文件", "rejected": rejected}), 400
-    created = manager.create_tasks(ids, snap["format"], out_dir)
-    log.info("监听一键转换：%d 个违规文件 -> %s", len(created), snap["format"])
-    return jsonify({"tasks": [public_task(t) for t in created],
-                    "rejected": rejected}), 201
+    all_tasks = []
+    for fmt, ids in ids_by_format.items():
+        created = manager.create_tasks(ids, fmt, out_dir)
+        all_tasks.extend(public_task(t) for t in created)
+    log.info("监听一键转换：%d 个违规文件（%d 种目标格式）", len(all_tasks), len(ids_by_format))
+    return jsonify({"tasks": all_tasks, "rejected": rejected}), 201
 
 
 @bp.post("/api/remove")

@@ -141,15 +141,18 @@ class TaskManager:
 
     # ── 任务创建 ──
 
-    def create_tasks(self, upload_ids, target_format, output_dir, overwrite=False):
+    def create_tasks(self, upload_ids, target_format, output_dir, overwrite=False, preset="default"):
         """为一组上传创建转换任务并入队，返回任务列表。
 
         target_format 必须在引擎层 OUTPUT_FORMATS 内；engine 未就绪时抛 EngineNotFoundError。
         overwrite 为 True 时转换前删除已存在的同名输出（覆盖重转）；
+        preset 为引擎层 CONVERSION_PRESETS 的键（阅读设备优化）；
         源格式与目标格式相同的文件直接建 skipped 任务，不入队。
         """
         if target_format not in ec.OUTPUT_FORMATS:
             raise ValueError(f"不支持的输出格式: {target_format}")
+        if preset not in ec.CONVERSION_PRESETS:
+            raise ValueError(f"未知的转换预设: {preset}")
         engine = self.resolve_engine()
         if engine is None:
             raise ec.EngineNotFoundError("未检测到 Calibre，请先安装或在设置中指定路径")
@@ -177,6 +180,7 @@ class TaskManager:
                     "output_path": str(out_dir / (Path(record["name"]).stem + "." + target_format)),
                     "output_dir": str(out_dir),
                     "overwrite": overwrite,
+                    "preset": preset,
                     "created_at": now,
                     "started_at": None,
                     "finished_at": None,
@@ -249,11 +253,13 @@ class TaskManager:
             task["progress"] = max(0, min(100, int(pct)))
 
         cancel_check = lambda: task_id in self._cancel_requests  # noqa: E731 - 闭包捕获 task_id
+        options = ec.CONVERSION_PRESETS.get(task.get("preset") or "default")
 
         try:
             status, message = ec.convert_file(engine, task["src_path"], dst,
                                               on_progress=on_progress,
-                                              cancel_check=cancel_check)
+                                              cancel_check=cancel_check,
+                                              options=options)
         except OSError as exc:
             self._finish(task_id, FAILED, error=f"无法启动转换引擎: {exc}")
             return

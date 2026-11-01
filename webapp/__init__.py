@@ -52,6 +52,30 @@ def make_engine_resolver(settings_data, base):
     return resolve
 
 
+def make_auto_convert_handler(manager, settings_data, base):
+    """监听自动转换回调：把违规文件复制进上传链路并按规则期望格式创建任务。
+
+    引擎未就绪或文件不可读时返回 0（watcher 记不住指纹，下轮可再试）。
+    """
+    def convert(paths, fmt):
+        if manager.resolve_engine() is None:
+            return 0
+        ids = []
+        for path in paths:
+            try:
+                content = Path(path).read_bytes()
+            except OSError:
+                continue
+            record = manager.store_upload(Path(path).name, content)
+            ids.append(record["id"])
+        if not ids:
+            return 0
+        out_dir = str(settings_data.get("output_dir") or "").strip() or str(Path(base) / "converted")
+        created = manager.create_tasks(ids, fmt, Path(out_dir))
+        return len(created)
+    return convert
+
+
 def create_app(base_dir=None, testing=False):
     """构建 Flask 应用：装配设置、任务管理器、路由与错误处理。"""
     base = Path(base_dir) if base_dir else settings.base_dir()
@@ -71,7 +95,8 @@ def create_app(base_dir=None, testing=False):
 
     manager = TaskManager(upload_dir, engine_resolver=make_engine_resolver(settings_data, base))
     app.extensions["task_manager"] = manager
-    watcher = FolderWatcher(settings_data)
+    watcher = FolderWatcher(settings_data,
+                            auto_convert_handler=make_auto_convert_handler(manager, settings_data, base))
     app.extensions["watcher"] = watcher
     watcher.start()
     if settings_data.get("output_dir"):

@@ -35,7 +35,7 @@ def set_fake_engine(app, engine="dummy"):
     app.extensions["task_manager"].resolve_engine = lambda: engine
 
 
-def fake_convert_ok(engine, src, dst, on_progress=None, cancel_check=None):
+def fake_convert_ok(engine, src, dst, on_progress=None, cancel_check=None, options=None):
     dst = Path(dst)
     if dst.exists():
         return ec.STATUS_SKIPPED, "输出已存在"  # 模拟引擎层对既有输出的跳过行为
@@ -211,7 +211,7 @@ class TestTaskFlow:
         patcher = pytest.MonkeyPatch()
         patcher.setattr(
             ec, "convert_file",
-            lambda engine, s, d, on_progress=None, cancel_check=None: (ec.STATUS_FAILED, "Error: Cannot decrypt DRM"),
+            lambda engine, s, d, on_progress=None, cancel_check=None, options=None: (ec.STATUS_FAILED, "Error: Cannot decrypt DRM"),
         )
         try:
             upload_file(client, "锁.epub")
@@ -228,7 +228,7 @@ class TestTaskFlow:
         patcher = pytest.MonkeyPatch()
         patcher.setattr(
             ec, "convert_file",
-            lambda engine, s, d, on_progress=None, cancel_check=None: (ec.STATUS_SKIPPED, "输出已存在"),
+            lambda engine, s, d, on_progress=None, cancel_check=None, options=None: (ec.STATUS_SKIPPED, "输出已存在"),
         )
         try:
             upload_file(client, "a.epub")
@@ -287,7 +287,7 @@ class TestTaskFlow:
         """M3：引擎 stderr 进度经 on_progress 写入任务，轮询可见。"""
         set_fake_engine(app_env)
 
-        def fake_with_progress(engine, src, dst, on_progress=None, cancel_check=None):
+        def fake_with_progress(engine, src, dst, on_progress=None, cancel_check=None, options=None):
             if on_progress:
                 on_progress(42)
             return fake_convert_ok(engine, src, dst)
@@ -501,7 +501,7 @@ class TestCancel:
     def test_cancel_converting_task(self, client, app_env, tmp_path):
         set_fake_engine(app_env)
 
-        def slow_convert(engine, src, dst, on_progress=None, cancel_check=None):
+        def slow_convert(engine, src, dst, on_progress=None, cancel_check=None, options=None):
             dst.parent.mkdir(parents=True, exist_ok=True)
             for _ in range(300):
                 if cancel_check is not None and cancel_check():
@@ -684,10 +684,8 @@ class TestWatchConvert:
         folder.mkdir()
         mobi = folder / "旧书.mobi"
         mobi.write_bytes(b"x" * 100)
-        past = time.time() - 60
-        import os
-        os.utime(mobi, (past, past))
-        client.post("/api/watch", json={"enabled": True, "folder": str(folder), "format": "epub"})
+        os_utime_past(mobi)
+        client.post("/api/watch", json={"rules": [{"folder": str(folder), "format": "epub"}]})
         client.get("/api/watch")  # 触发巡检，生成违规列表
 
         out = tmp_path / "out"
@@ -701,10 +699,6 @@ class TestWatchConvert:
             app_env.extensions["task_manager"].wait_idle()
         finally:
             patcher.undo()
-        assert resp.status_code == 201
-        tasks = resp.get_json()["tasks"]
-        assert tasks[0]["format_out"] == "epub"
-        app_env.extensions["task_manager"].wait_idle()
         final = client.get("/api/tasks").get_json()["tasks"][0]
         assert final["status"] == "done", (
             final["status"], final["error"], final["error_detail"], final["message"])
@@ -714,6 +708,34 @@ class TestWatchConvert:
         listing = client.get("/api/tasks").get_json()
         assert any(u["name"] == "旧书.mobi" for u in listing["uploads"])
 
+    def test_mixed_formats_converted_per_rule(self, client, app_env, tmp_path):
+        """两条规则两种期望格式：一键转换按各自格式分组创建任务。"""
+        set_fake_engine(app_env)
+        f1 = tmp_path / "库1"
+        f2 = tmp_path / "库2"
+        f1.mkdir()
+        f2.mkdir()
+        mobi = f1 / "书A.mobi"
+        pdf = f2 / "书B.pdf"
+        mobi.write_bytes(b"x")
+        pdf.write_bytes(b"x")
+        os_utime_past(mobi)
+        os_utime_past(pdf)
+        client.post("/api/watch", json={"rules": [
+            {"folder": str(f1), "format": "epub"},
+            {"folder": str(f2), "format": "txt"}]})
+        client.get("/api/watch")
+        patcher = pytest.MonkeyPatch()
+        patcher.setattr(ec, "convert_file", fake_convert_ok)
+        try:
+            resp = client.post("/api/watch-convert",
+                               json={"paths": [str(mobi), str(pdf)]})
+        finally:
+            patcher.undo()
+        assert resp.status_code == 201
+        fmts = sorted(t["format_out"] for t in resp.get_json()["tasks"])
+        assert fmts == ["epub", "txt"]
+
     def test_rejects_unconvertible_and_unknown_paths(self, client, app_env, tmp_path):
         set_fake_engine(app_env)
         folder = tmp_path / "书库"
@@ -721,7 +743,7 @@ class TestWatchConvert:
         exe = folder / "坏.exe"
         exe.write_bytes(b"x")
         os_utime_past(exe)
-        client.post("/api/watch", json={"enabled": True, "folder": str(folder), "format": "epub"})
+        client.post("/api/watch", json={"rules": [{"folder": str(folder), "format": "epub"}]})
         client.get("/api/watch")
         resp = client.post("/api/watch-convert", json={"paths": [str(exe)]})
         assert resp.status_code == 400  # 无法识别的文件不可转换
@@ -734,7 +756,7 @@ class TestWatchConvert:
         mobi = folder / "a.mobi"
         mobi.write_bytes(b"x")
         os_utime_past(mobi)
-        client.post("/api/watch", json={"enabled": True, "folder": str(folder), "format": "epub"})
+        client.post("/api/watch", json={"rules": [{"folder": str(folder), "format": "epub"}]})
         client.get("/api/watch")
         resp = client.post("/api/watch-convert", json={"paths": [str(mobi)]})
         assert resp.status_code == 409
@@ -777,12 +799,18 @@ class TestOpenFile:
         assert resp.status_code == 404
 
 
-# ── 文件夹监听（F8）──
+# ── 文件夹监听（F8，V1.3 多规则）──
+
+
+def os_utime_past(path, seconds=60):
+    import os
+    past = time.time() - seconds
+    os.utime(path, (past, past))
 
 
 class TestWatch:
-    def _set_watch(self, app_env, **kw):
-        app_env.extensions["settings_data"].update(kw)
+    def _set_rules(self, app_env, rules):
+        app_env.extensions["settings_data"]["watch_rules"] = rules
 
     def test_classify_two_kinds(self, tmp_path):
         from webapp.watcher import classify, KIND_UNCONVERTIBLE, KIND_WRONG_FORMAT
@@ -790,69 +818,114 @@ class TestWatch:
         assert classify(tmp_path / "b.mobi", "epub") == KIND_WRONG_FORMAT
         assert classify(tmp_path / "c.exe", "epub") == KIND_UNCONVERTIBLE
 
-    def test_scan_reports_violations_and_skips_fresh_files(self, app_env, tmp_path):
-        import os
-        self._set_watch(app_env, watch_enabled=True, watch_folder=str(tmp_path),
-                        watch_format="epub")
-        old_mobi = tmp_path / "旧书.mobi"
-        old_mobi.write_bytes(b"x")
-        past = time.time() - 60
-        os.utime(old_mobi, (past, past))  # 60 秒前的稳定文件
-        (tmp_path / "刚复制.mobi").write_bytes(b"x")  # 10 秒内的新文件应被跳过
-        watcher = app_env.extensions["watcher"]
-        _config, state = watcher.scan_once()
-        names = [v["name"] for v in state["violations"]]
-        assert names == ["旧书.mobi"]
-        assert state["violations"][0]["kind"] == "wrong_format"
+    def test_scan_reports_violations_across_rules(self, app_env, tmp_path):
+        folder1 = tmp_path / "书库1"
+        folder2 = tmp_path / "书库2"
+        folder1.mkdir()
+        folder2.mkdir()
+        self._set_rules(app_env, [
+            {"folder": str(folder1), "format": "epub", "auto_convert": False},
+            {"folder": str(folder2), "format": "mobi", "auto_convert": False},
+        ])
+        (folder1 / "旧书.mobi").write_bytes(b"x")
+        (folder1 / "好书.epub").write_bytes(b"x")
+        (folder2 / "怪.exe").write_bytes(b"x")
+        os_utime_past(folder1 / "旧书.mobi")
+        os_utime_past(folder1 / "好书.epub")
+        os_utime_past(folder2 / "怪.exe")
+        state = app_env.extensions["watcher"].scan_once()
+        by_path = {v["path"]: v for v in state["violations"]}
+        assert by_path[str(folder1 / "旧书.mobi")]["kind"] == "wrong_format"
+        assert by_path[str(folder1 / "旧书.mobi")]["rule_format"] == "epub"
+        assert by_path[str(folder2 / "怪.exe")]["kind"] == "unconvertible"
+        assert str(folder1 / "好书.epub") not in by_path
 
-    def test_unreachable_folder_reported_not_crash(self, app_env, tmp_path):
-        self._set_watch(app_env, watch_enabled=True,
-                        watch_folder=str(tmp_path / "不存在的文件夹"), watch_format="epub")
-        _config, state = app_env.extensions["watcher"].scan_once()
+    def test_skips_fresh_files_and_hidden(self, app_env, tmp_path):
+        folder = tmp_path / "书库"
+        folder.mkdir()
+        self._set_rules(app_env, [{"folder": str(folder), "format": "epub"}])
+        (folder / "稳定.mobi").write_bytes(b"x")
+        os_utime_past(folder / "稳定.mobi")
+        (folder / ".隐藏.mobi").write_bytes(b"x")   # 隐藏文件
+        state = app_env.extensions["watcher"].scan_once()
+        assert [v["name"] for v in state["violations"]] == ["稳定.mobi"]
+
+    def test_unreachable_rule_reported(self, app_env, tmp_path):
+        folder = tmp_path / "存在"
+        folder.mkdir()
+        self._set_rules(app_env, [
+            {"folder": str(folder), "format": "epub"},
+            {"folder": str(tmp_path / "不存在的U盘"), "format": "mobi"},
+        ])
+        state = app_env.extensions["watcher"].scan_once()
+        assert state["unreachable"] == [str(tmp_path / "不存在的U盘")]
         assert state["reachable"] is False
-        assert state["violations"] == []
 
     def test_fresh_reported_once_then_again_after_removal(self, app_env, tmp_path):
-        self._set_watch(app_env, watch_enabled=True, watch_folder=str(tmp_path),
-                        watch_format="epub")
-        mobi = tmp_path / "a.mobi"
+        folder = tmp_path / "书库"
+        folder.mkdir()
+        self._set_rules(app_env, [{"folder": str(folder), "format": "epub"}])
+        mobi = folder / "a.mobi"
         mobi.write_bytes(b"x")
         os_utime_past(mobi)
         watcher = app_env.extensions["watcher"]
-        _c, s1 = watcher.scan_once()
+        s1 = watcher.scan_once()
         assert len(s1["fresh"]) == 1
-        _c, s2 = watcher.scan_once()
+        s2 = watcher.scan_once()
         assert s2["fresh"] == []            # 不重复提示
         mobi.unlink()                        # 移走
-        _c, s3 = watcher.scan_once()
+        s3 = watcher.scan_once()
         assert s3["violations"] == []
-        mobi.write_bytes(b"x")               # 再出现
+        mobi.write_bytes(b"x")
         os_utime_past(mobi)
-        _c, s4 = watcher.scan_once()
-        assert len(s4["fresh"]) == 1         # 再次提示
+        s4 = watcher.scan_once()
+        assert len(s4["fresh"]) == 1        # 再出现重新提示
 
-    def test_disabled_clears_violations(self, app_env, tmp_path):
-        self._set_watch(app_env, watch_enabled=False, watch_folder=str(tmp_path))
-        _config, state = app_env.extensions["watcher"].scan_once()
+    def test_disabled_when_no_rules(self, app_env):
+        self._set_rules(app_env, [])
+        state = app_env.extensions["watcher"].scan_once()
         assert state["violations"] == []
-        assert state["reachable"] is None
+        snap = app_env.extensions["watcher"].snapshot()
+        assert snap["enabled"] is False
 
-    def test_post_watch_validates_and_persists(self, client, app_env, tmp_path):
-        bad = client.post("/api/watch", json={"enabled": True, "folder": ""})
-        assert bad.status_code == 400
-        bad_fmt = client.post("/api/watch",
-                              json={"enabled": True, "folder": str(tmp_path), "format": "exe"})
+    def test_post_watch_rules_and_persistence(self, client, app_env, tmp_path):
+        f1 = tmp_path / "书库1"
+        f2 = tmp_path / "书库2"
+        f1.mkdir()
+        f2.mkdir()
+        bad_fmt = client.post("/api/watch", json={
+            "rules": [{"folder": str(f1), "format": "exe"}]})
         assert bad_fmt.status_code == 400
-        rel = client.post("/api/watch", json={"folder": "relative/path"})
+        dup = client.post("/api/watch", json={"rules": [
+            {"folder": str(f1), "format": "epub"},
+            {"folder": str(f1), "format": "mobi"}]})
+        assert dup.status_code == 400
+        rel = client.post("/api/watch", json={"rules": [{"folder": "rel", "format": "epub"}]})
         assert rel.status_code == 400
-        ok = client.post("/api/watch", json={"enabled": True, "folder": str(tmp_path),
-                                             "format": "mobi", "interval": 10})
+        ok = client.post("/api/watch", json={
+            "rules": [{"folder": str(f1), "format": "epub", "auto_convert": True},
+                      {"folder": str(f2), "format": "mobi"}],
+            "interval": 10})
         assert ok.status_code == 200
         body = ok.get_json()
-        assert body["enabled"] is True and body["format"] == "mobi"
+        assert len(body["rules"]) == 2
+        assert body["rules"][0]["auto_convert"] is True
+        assert body["enabled"] is True
         on_disk = json.loads((app_env.extensions["base_dir"] / "settings.json")
                              .read_text(encoding="utf-8"))
-        assert on_disk["watch_enabled"] is True and on_disk["watch_interval"] == 10
+        assert len(on_disk["watch_rules"]) == 2 and on_disk["watch_interval"] == 10
+        # 空规则 = 停用
+        off = client.post("/api/watch", json={"rules": []})
+        assert off.get_json()["enabled"] is False
+
+    def test_migrate_legacy_single_rule(self, tmp_path):
+        from webapp.settings import migrate_watch
+        data = {"watch_folder": str(tmp_path), "watch_format": "mobi"}
+        migrate_watch(data)
+        assert len(data["watch_rules"]) == 1
+        assert data["watch_rules"][0]["format"] == "mobi"
+        migrate_watch(data)  # 已迁移则不重复
+        assert len(data["watch_rules"]) == 1
 
     def test_tasks_response_carries_engine(self, client):
         body = client.get("/api/tasks").get_json()
@@ -860,10 +933,102 @@ class TestWatch:
         assert body["engine"]["install"]["state"] == "idle"
 
 
-def os_utime_past(path, seconds=60):
-    import os
-    past = time.time() - seconds
-    os.utime(path, (past, past))
+class TestAutoConvert:
+    def _setup(self, app_env, tmp_path):
+        folder = tmp_path / "书库"
+        folder.mkdir()
+        app_env.extensions["settings_data"]["watch_rules"] = [
+            {"folder": str(folder), "format": "epub", "auto_convert": True}]
+        return app_env.extensions["watcher"]
+
+    def test_auto_converts_new_wrong_format_files(self, client, app_env, tmp_path):
+        set_fake_engine(app_env)
+        watcher = self._setup(app_env, tmp_path)
+        mobi = tmp_path / "书库" / "a.mobi"
+        mobi.write_bytes(b"x" * 100)
+        os_utime_past(mobi)
+        state = watcher.scan_once()
+        assert state["auto_converted"] == ["a.mobi"]
+        app_env.extensions["task_manager"].wait_idle()
+        tasks = client.get("/api/tasks").get_json()["tasks"]
+        assert tasks and tasks[0]["format_out"] == "epub"
+        assert mobi.exists()  # 源文件不动（转换的是复制链路）
+
+    def test_engine_missing_skips_auto_convert(self, app_env, tmp_path):
+        # 未 set_fake_engine：fixture 已把 find_engine 置 None
+        watcher = self._setup(app_env, tmp_path)
+        mobi = tmp_path / "书库" / "a.mobi"
+        mobi.write_bytes(b"x")
+        os_utime_past(mobi)
+        state = watcher.scan_once()
+        assert state["auto_converted"] == []
+        assert len(state["violations"]) == 1  # 违规仍照常报告
+
+    def test_no_auto_convert_when_rule_off(self, client, app_env, tmp_path):
+        set_fake_engine(app_env)
+        folder = tmp_path / "书库"
+        folder.mkdir()
+        app_env.extensions["settings_data"]["watch_rules"] = [
+            {"folder": str(folder), "format": "epub", "auto_convert": False}]
+        mobi = folder / "a.mobi"
+        mobi.write_bytes(b"x")
+        os_utime_past(mobi)
+        state = app_env.extensions["watcher"].scan_once()
+        assert state["auto_converted"] == []
+        assert client.get("/api/tasks").get_json()["tasks"] == []
+
+
+# ── 转换预设（服务层）──
+
+
+class TestConvertPreset:
+    def test_preset_passed_to_engine(self, client, app_env, tmp_path):
+        set_fake_engine(app_env)
+        captured = []
+        patcher = pytest.MonkeyPatch()
+
+        def capturing_fake(engine, src, dst, on_progress=None, cancel_check=None, options=None):
+            captured.append(options)
+            return fake_convert_ok(engine, src, dst, on_progress, cancel_check, options)
+
+        patcher.setattr(ec, "convert_file", capturing_fake)
+        try:
+            upload_file(client, "a.epub")
+            _resp, tasks = convert_and_wait(
+                client, app_env,
+                {"format": "mobi", "output_dir": str(tmp_path), "preset": "kindle"})
+        finally:
+            patcher.undo()
+        assert tasks[0]["status"] == "done"
+        assert captured == [["--output-profile", "kindle"]]
+
+    def test_unknown_preset_rejected(self, client, app_env, tmp_path):
+        set_fake_engine(app_env)
+        upload_file(client, "a.epub")
+        resp = client.post("/api/convert", json={"format": "mobi", "preset": "hacker"})
+        assert resp.status_code == 400
+
+
+# ── 历史导出 CSV ──
+
+
+class TestHistoryCsv:
+    def test_csv_content_and_bom(self, client, app_env, tmp_path):
+        set_fake_engine(app_env)
+        patcher = pytest.MonkeyPatch()
+        patcher.setattr(ec, "convert_file", fake_convert_ok)
+        try:
+            upload_file(client, "书.epub")
+            convert_and_wait(client, app_env, {"format": "mobi", "output_dir": str(tmp_path)})
+        finally:
+            patcher.undo()
+        resp = client.get("/api/history.csv")
+        assert resp.status_code == 200
+        assert resp.headers["Content-Disposition"].startswith("attachment")
+        raw = resp.data
+        assert raw.startswith(b"\xef\xbb\xbf")  # UTF-8 BOM，Excel 直接打开不乱码
+        text = raw.decode("utf-8-sig")
+        assert "书.epub" in text and "mobi" in text and "已完成" in text
 
 
 # ── 状态与页面 ──
