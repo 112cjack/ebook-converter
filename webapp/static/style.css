@@ -33,29 +33,55 @@
 }
 :root[data-theme="kindle"]{
   color-scheme: light;
-  --x-paper: #A8A49B;
+  --x-paper: #D6D4CC;
   --x-surface: rgba(255, 255, 255, .58);
-  --x-dropbg: rgba(255, 255, 255, .44);
+  --x-dropbg: rgba(255, 255, 255, .28);
   --x-ink: #1B1B18;
-  --x-muted: #403D37;
-  --x-line: rgba(27, 27, 24, .16);
+  --x-muted: #4A473F;
+  --x-line: rgba(27, 27, 24, .18);
   --x-seal: #1B1B18;
   --x-sealbg: #1B1B18;
   --x-moss: #2F6640;
   --x-clay: #A63A2B;
   --x-amber: #6B5416;
-  --x-guidebg: rgba(27, 27, 24, .12);
+  --x-guidebg: rgba(27, 27, 24, .1);
   --x-connbg: rgba(163, 58, 43, .18);
   --x-primarybg: #1B1B18;
-  --x-onprimary: #FBFBF7;
-  --x-track: rgba(27, 27, 24, .1);
-  --x-drophover: rgba(255, 255, 255, .85);
-  --x-toastshadow: rgba(38, 34, 29, .18);
-  --x-grain: .42;
+  --x-onprimary: #F0EEE8;
+  --x-track: rgba(27, 27, 24, .12);
+  --x-drophover: rgba(255, 255, 255, .78);
+  --x-toastshadow: rgba(38, 34, 29, .22);
+  --x-grain: .4;
   --x-texture:
-    radial-gradient(120% 100% at 50% 0%, rgba(27, 27, 24, 0) 56%, rgba(27, 27, 24, .34) 100%),
-    radial-gradient(60% 26% at 50% 0%, rgba(255, 250, 238, .15), transparent 72%);
-  --x-scene: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20480%20320%22%20preserveAspectRatio%3D%22xMidYMax%20slice%22%3E%3Crect%20x%3D%2212%22%20y%3D%2212%22%20width%3D%22456%22%20height%3D%22296%22%20fill%3D%22none%22%20stroke%3D%22rgba%2827%2C27%2C24%2C.2%29%22%20stroke-width%3D%221.5%22%2F%3E%3Crect%20x%3D%2218%22%20y%3D%2218%22%20width%3D%22444%22%20height%3D%22284%22%20fill%3D%22none%22%20stroke%3D%22rgba%2827%2C27%2C24%2C.09%29%22%20stroke-width%3D%221%22%2F%3E%3Crect%20y%3D%22252%22%20width%3D%22480%22%20height%3D%2268%22%20fill%3D%22rgba%2827%2C27%2C24%2C.12%29%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22252%22%20x2%3D%22480%22%20y2%3D%22252%22%20stroke%3D%22rgba%2827%2C27%2C24%2C.4%29%22%20stroke-width%3D%222%22%2F%3E%3Crect%20width%3D%22480%22%20height%3D%2290%22%20fill%3D%22rgba%28255%2C250%2C238%2C.12%29%22%2F%3E%3Cg%20fill%3D%22rgba%2837%2C35%2C30%2C.82%29%22%3E%3Crect%20x%3D%22146%22%20y%3D%22226%22%20width%3D%22132%22%20height%3D%2226%22%20rx%3D%222%22%2F%3E%3Crect%20x%3D%22154%22%20y%3D%22200%22%20width%3D%22116%22%20height%3D%2226%22%20rx%3D%222%22%2F%3E%3Crect%20x%3D%22162%22%20y%3D%22176%22%20width%3D%22100%22%20height%3D%2224%22%20rx%3D%222%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22rgba%28168%2C164%2C155%2C.6%29%22%20stroke-width%3D%221.5%22%3E%3Cline%20x1%3D%22150%22%20y1%3D%22245%22%20x2%3D%22274%22%20y2%3D%22245%22%2F%3E%3Cline%20x1%3D%22158%22%20y1%3D%22219%22%20x2%3D%22266%22%20y2%3D%22219%22%2F%3E%3Cline%20x1%3D%22166%22%20y1%3D%22194%22%20x2%3D%22258%22%20y2%3D%22194%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22rgba%28240%2C238%2C230%2C.55%29%22%3E%3Crect%20x%3D%22160%22%20y%3D%22236%22%20width%3D%2236%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%22168%22%20y%3D%22210%22%20width%3D%2230%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%22176%22%20y%3D%22185%22%20width%3D%2226%22%20height%3D%223%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22rgba%2837%2C35%2C30%2C.78%29%22%20stroke-width%3D%223%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M356%20218%20v28%20a14%2014%200%200%200%2028%200%20v-28%22%2F%3E%3Cpath%20d%3D%22M384%20224%20q15%202%200%2016%22%2F%3E%3Cline%20x1%3D%22348%22%20y1%3D%22250%22%20x2%3D%22392%22%20y2%3D%22250%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22M366%20208%20q4%20-8%200%20-14%20M378%20208%20q4%20-8%200%20-14%22%20stroke%3D%22rgba%2837%2C35%2C30%2C.35%29%22%20stroke-width%3D%222.5%22%20fill%3D%22none%22%2F%3E%3Cg%20stroke%3D%22rgba%2837%2C35%2C30%2C.62%29%22%20stroke-width%3D%223%22%20fill%3D%22none%22%3E%3Ccircle%20cx%3D%22424%22%20cy%3D%22240%22%20r%3D%2211%22%2F%3E%3Ccircle%20cx%3D%22452%22%20cy%3D%22240%22%20r%3D%2211%22%2F%3E%3Cpath%20d%3D%22M435%20238%20q3%20-5%206%200%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+    radial-gradient(120% 100% at 50% 0%, rgba(27, 27, 24, 0) 58%, rgba(27, 27, 24, .26) 100%);
+  --x-scene: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20480%20320%22%20preserveAspectRatio%3D%22xMidYMax%20slice%22%3E%3Crect%20x%3D%2212%22%20y%3D%2212%22%20width%3D%22456%22%20height%3D%22296%22%20fill%3D%22none%22%20stroke%3D%22rgba%2827%2C27%2C24%2C.2%29%22%20stroke-width%3D%221.5%22%2F%3E%3Crect%20x%3D%2218%22%20y%3D%2218%22%20width%3D%22444%22%20height%3D%22284%22%20fill%3D%22none%22%20stroke%3D%22rgba%2827%2C27%2C24%2C.09%29%22%20stroke-width%3D%221%22%2F%3E%3Crect%20y%3D%22252%22%20width%3D%22480%22%20height%3D%2268%22%20fill%3D%22rgba%2827%2C27%2C24%2C.12%29%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22252%22%20x2%3D%22480%22%20y2%3D%22252%22%20stroke%3D%22rgba%2827%2C27%2C24%2C.4%29%22%20stroke-width%3D%222%22%2F%3E%3Crect%20width%3D%22480%22%20height%3D%2290%22%20fill%3D%22rgba%28255%2C250%2C238%2C.12%29%22%2F%3E%3Cg%20fill%3D%22rgba%2837%2C35%2C30%2C.82%29%22%3E%3Crect%20x%3D%22146%22%20y%3D%22226%22%20width%3D%22132%22%20height%3D%2226%22%20rx%3D%222%22%2F%3E%3Crect%20x%3D%22154%22%20y%3D%22200%22%20width%3D%22116%22%20height%3D%2226%22%20rx%3D%222%22%2F%3E%3Crect%20x%3D%22162%22%20y%3D%22176%22%20width%3D%22100%22%20height%3D%2224%22%20rx%3D%222%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22rgba%28168%2C164%2C155%2C.6%29%22%20stroke-width%3D%221.5%22%3E%3Cline%20x1%3D%22150%22%20y1%3D%22245%22%20x2%3D%22274%22%20y2%3D%22245%22%2F%3E%3Cline%20x1%3D%22158%22%20y1%3D%22219%22%20x2%3D%22266%22%20y2%3D%22219%22%2F%3E%3Cline%20x1%3D%22166%22%20y1%3D%22194%22%20x2%3D%22258%22%20y2%3D%22194%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22rgba%28240%2C238%2C230%2C.55%29%22%3E%3Crect%20x%3D%22160%22%20y%3D%22236%22%20width%3D%2236%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%22168%22%20y%3D%22210%22%20width%3D%2230%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%22176%22%20y%3D%22185%22%20width%3D%2226%22%20height%3D%223%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22rgba%2837%2C35%2C30%2C.78%29%22%20stroke-width%3D%223%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M356%20218%20v28%20a14%2014%200%200%200%2028%200%20v-28%22%2F%3E%3Cpath%20d%3D%22M384%20224%20q15%202%200%2016%22%2F%3E%3Cline%20x1%3D%22348%22%20y1%3D%22250%22%20x2%3D%22392%22%20y2%3D%22250%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22M366%20208%20q4%20-8%200%20-14%20M378%20208%20q4%20-8%200%20-14%22%20stroke%3D%22rgba%2837%2C35%2C30%2C.35%29%22%20stroke-width%3D%222.5%22%20fill%3D%22none%22%2F%3E%3Cg%20stroke%3D%22rgba%2837%2C35%2C30%2C.62%29%22%20stroke-width%3D%223%22%20fill%3D%22none%22%3E%3Ccircle%20cx%3D%22424%22%20cy%3D%22240%22%20r%3D%2211%22%2F%3E%3Ccircle%20cx%3D%22452%22%20cy%3D%22240%22%20r%3D%2211%22%2F%3E%3Cpath%20d%3D%22M435%20238%20q3%20-5%206%200%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E")url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20480%20320%22%20preserveAspectRatio%3D%22xMidYMax%20slice%22%3E%3Ctext%20x%3D%22252%22%20y%3D%22128%22%20text-anchor%3D%22middle%22%20font-family%3D%22Georgia%2CSongti%20SC%2CSimSun%2Cserif%22%20font-size%3D%2217%22%20letter-spacing%3D%227%22%20fill%3D%22rgba%2858%2C56%2C51%2C.62%29%22%3E%E7%BA%B5%E4%B8%80%E8%8B%87%E4%B9%8B%E6%89%80%E5%A6%82%20%C2%B7%20%E5%87%8C%E4%B8%87%E9%A1%B7%E4%B9%8B%E8%8C%AB%E7%84%B6%3C%2Ftext%3E%3Cg%20fill%3D%22rgba%2858%2C56%2C51%2C.88%29%22%3E%3Crect%20x%3D%2252%22%20y%3D%22166%22%20width%3D%22112%22%20height%3D%2224%22%20rx%3D%222%22%2F%3E%3Crect%20x%3D%2260%22%20y%3D%22142%22%20width%3D%2298%22%20height%3D%2224%22%20rx%3D%222%22%2F%3E%3Crect%20x%3D%2266%22%20y%3D%22120%22%20width%3D%2286%22%20height%3D%2222%22%20rx%3D%222%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22rgba%28214%2C212%2C204%2C.75%29%22%20stroke-width%3D%221.6%22%3E%3Cline%20x1%3D%2256%22%20y1%3D%22184%22%20x2%3D%22166%22%20y2%3D%22184%22%2F%3E%3Cline%20x1%3D%2264%22%20y1%3D%22160%22%20x2%3D%22154%22%20y2%3D%22160%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22rgba%28214%2C212%2C204%2C.6%29%22%3E%3Crect%20x%3D%2260%22%20y%3D%22176%22%20width%3D%2232%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%2268%22%20y%3D%22152%22%20width%3D%2228%22%20height%3D%223%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22rgba%2858%2C56%2C51%2C.9%29%22%20stroke-width%3D%223.4%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M258%20252%20Q262%20224%20292%20218%20L426%20218%20Q450%20224%20452%20252%22%2F%3E%3Cpath%20d%3D%22M292%20218%20Q330%20194%20360%20202%20Q392%20194%20426%20218%22%2F%3E%3Cline%20x1%3D%22360%22%20y1%3D%22202%22%20x2%3D%22360%22%20y2%3D%22218%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22rgba%2858%2C56%2C51%2C.92%29%22%3E%3Cpath%20d%3D%22M298%20214%20Q294%20186%20322%20178%20Q326%20168%20334%20176%20L342%20170%20L346%20182%20Q376%20182%20392%20200%20Q402%20210%20398%20214%20Z%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22M396%20212%20Q420%20220%20412%20198%20Q406%20184%20418%20176%22%20fill%3D%22none%22%20stroke%3D%22rgba%2858%2C56%2C51%2C.85%29%22%20stroke-width%3D%224.4%22%20stroke-linecap%3D%22round%22%2F%3E%3Ccircle%20cx%3D%22330%22%20cy%3D%22190%22%20r%3D%222.4%22%20fill%3D%22%23D6D4CC%22%2F%3E%3Cpath%20d%3D%22M400%20212%20Q424%20220%20416%20198%20Q408%20184%20420%20176%22%20fill%3D%22none%22%20stroke%3D%22rgba%2858%2C56%2C51%2C.85%29%22%20stroke-width%3D%224.4%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22262%22%20x2%3D%22480%22%20y2%3D%22262%22%20stroke%3D%22rgba%2858%2C56%2C51%2C.35%29%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E");
+}
+
+/* Kindle · 墨夜：黑底白字（同构图熄屏反白） */
+:root[data-theme="kindledark"]{
+  color-scheme: dark;
+  --x-paper: #141311;
+  --x-surface: rgba(42, 42, 44, .58);
+  --x-dropbg: rgba(42, 42, 44, .44);
+  --x-ink: #E4E2DA;
+  --x-muted: #A5A299;
+  --x-line: rgba(228, 226, 218, .2);
+  --x-seal: #D8D6CE;
+  --x-sealbg: #D8D6CE;
+  --x-moss: #8FB894;
+  --x-clay: #D9907E;
+  --x-amber: #CDB98A;
+  --x-guidebg: rgba(216, 214, 206, .09);
+  --x-connbg: rgba(163, 58, 43, .25);
+  --x-primarybg: #E4E2DA;
+  --x-onprimary: #141311;
+  --x-track: rgba(228, 226, 218, .18);
+  --x-drophover: rgba(44, 42, 38, .85);
+  --x-toastshadow: rgba(0, 0, 0, .5);
+  --x-grain: .44;
+  --x-texture:
+    radial-gradient(120% 100% at 50% 0%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, .5) 100%);
+  --x-scene: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20480%20320%22%20preserveAspectRatio%3D%22xMidYMax%20slice%22%3E%3Ctext%20x%3D%22252%22%20y%3D%22128%22%20text-anchor%3D%22middle%22%20font-family%3D%22Georgia%2CSongti%20SC%2CSimSun%2Cserif%22%20font-size%3D%2217%22%20letter-spacing%3D%227%22%20fill%3D%22rgba%28216%2C214%2C206%2C.6%29%22%3E%E7%BA%B5%E4%B8%80%E8%8B%87%E4%B9%8B%E6%89%80%E5%A6%82%20%C2%B7%20%E5%87%8C%E4%B8%87%E9%A1%B7%E4%B9%8B%E8%8C%AB%E7%84%B6%3C%2Ftext%3E%3Cg%20fill%3D%22rgba%28216%2C214%2C206%2C.88%29%22%3E%3Crect%20x%3D%2252%22%20y%3D%22166%22%20width%3D%22112%22%20height%3D%2224%22%20rx%3D%222%22%2F%3E%3Crect%20x%3D%2260%22%20y%3D%22142%22%20width%3D%2298%22%20height%3D%2224%22%20rx%3D%222%22%2F%3E%3Crect%20x%3D%2266%22%20y%3D%22120%22%20width%3D%2286%22%20height%3D%2222%22%20rx%3D%222%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22rgba%2820%2C19%2C17%2C.55%29%22%20stroke-width%3D%221.6%22%3E%3Cline%20x1%3D%2256%22%20y1%3D%22184%22%20x2%3D%22166%22%20y2%3D%22184%22%2F%3E%3Cline%20x1%3D%2264%22%20y1%3D%22160%22%20x2%3D%22154%22%20y2%3D%22160%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22rgba%2820%2C19%2C17%2C.5%29%22%3E%3Crect%20x%3D%2260%22%20y%3D%22176%22%20width%3D%2232%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%2268%22%20y%3D%22152%22%20width%3D%2228%22%20height%3D%223%22%2F%3E%3C%2Fg%3E%3Cg%20stroke%3D%22rgba%28216%2C214%2C206%2C.85%29%22%20stroke-width%3D%223.4%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M258%20252%20Q262%20224%20292%20218%20L426%20218%20Q450%20224%20452%20252%22%2F%3E%3Cpath%20d%3D%22M292%20218%20Q330%20194%20360%20202%20Q392%20194%20426%20218%22%2F%3E%3Cline%20x1%3D%22360%22%20y1%3D%22202%22%20x2%3D%22360%22%20y2%3D%22218%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22rgba%28216%2C214%2C206%2C.92%29%22%3E%3Cpath%20d%3D%22M298%20214%20Q294%20186%20322%20178%20Q326%20168%20334%20176%20L342%20170%20L346%20182%20Q376%20182%20392%20200%20Q402%20210%20398%20214%20Z%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22M396%20212%20Q420%20220%20412%20198%20Q406%20184%20418%20176%22%20fill%3D%22none%22%20stroke%3D%22rgba%28216%2C214%2C206%2C.8%29%22%20stroke-width%3D%224.4%22%20stroke-linecap%3D%22round%22%2F%3E%3Ccircle%20cx%3D%22330%22%20cy%3D%22190%22%20r%3D%222.4%22%20fill%3D%22%23141311%22%2F%3E%3Cpath%20d%3D%22M400%20212%20Q424%20220%20416%20198%20Q408%20184%20420%20176%22%20fill%3D%22none%22%20stroke%3D%22rgba%28216%2C214%2C206%2C.8%29%22%20stroke-width%3D%224.4%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22262%22%20x2%3D%22480%22%20y2%3D%22262%22%20stroke%3D%22rgba%28216%2C214%2C206%2C.3%29%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E");
 }
 :root[data-theme="santi"]{
   color-scheme: dark;
@@ -463,13 +489,27 @@ body{
 .x-swatch{ width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--x-line); flex: none; }
 
 /* Kindle：毛玻璃面板（半透明表面 + 背景模糊 + 顶光高光） */
-:root[data-theme="kindle"] :is(.x-top,.x-row,.x-drop,.x-action,.x-dlg,.x-toast,.x-watchcard,.x-guide){
-  backdrop-filter: blur(14px) saturate(1.15);
-  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+:root[data-theme="kindle"] :is(.x-top,.x-row,.x-empty,.x-action,.x-dlg,.x-toast,.x-watchcard,.x-guide),
+:root[data-theme="kindledark"] :is(.x-top,.x-row,.x-empty,.x-action,.x-dlg,.x-toast,.x-watchcard,.x-guide){
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow: 0 8px 40px rgba(20, 19, 17, .14), inset 0 1px 0 rgba(255, 255, 255, .5),
+    inset 0 -1px 0 rgba(20, 19, 17, .06);
 }
-:root[data-theme="kindle"] :is(.x-top,.x-row,.x-drop,.x-action){
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8);
+:root[data-theme="kindle"] :is(.x-top,.x-row,.x-empty,.x-action,.x-dlg,.x-toast,.x-watchcard,.x-guide){
+  border-color: rgba(255, 255, 255, .45);
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, .5), rgba(255, 255, 255, .22) 55%, rgba(255, 255, 255, .42));
 }
+:root[data-theme="kindledark"] :is(.x-top,.x-row,.x-empty,.x-action,.x-dlg,.x-toast,.x-watchcard,.x-guide){
+  border-color: rgba(228, 226, 218, .15);
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, .09), rgba(255, 255, 255, .03) 55%, rgba(255, 255, 255, .06)),
+    var(--x-surface);
+}
+:root[data-theme="kindledark"] .x-drop{ border-color: rgba(228, 226, 218, .2); }
+:root[data-theme="kindle"] .x-primary,
+:root[data-theme="kindledark"] .x-primary{ border-radius: 10px; }
 
 @media (max-width: 680px){
   .x-row{ grid-template-columns: 8px 1fr auto; }

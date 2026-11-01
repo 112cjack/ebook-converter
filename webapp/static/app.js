@@ -1010,7 +1010,7 @@
 
   // ── 主题切换（纯视觉：读写 localStorage、切换 :root 的 data-theme）──
 
-  var THEMES = ["night", "kindle", "santi"];
+  var THEMES = ["night", "kindle", "kindledark", "santi"];
 
   function applyTheme(name) {
     if (THEMES.indexOf(name) < 0) name = "night";
@@ -1021,7 +1021,7 @@
     // Chromium 在 color-scheme 切换后 backdrop-filter 层可能渲染陈旧：
     // 短暂移除再恢复各面板的 backdrop-filter，强制重建合成层
     var blurEls = document.querySelectorAll(
-      ".x-top,.x-row,.x-drop,.x-action,.x-dlg,.x-toast,.x-watchcard,.x-guide");
+      ".x-top,.x-row,.x-drop,.x-empty,.x-action,.x-dlg,.x-toast,.x-watchcard,.x-guide");
     var layers = document.querySelectorAll(".x-scenebg,.x-texbg,.x-grain");
     Array.prototype.forEach.call(layers, function (el) {
       el.style.display = "none";
