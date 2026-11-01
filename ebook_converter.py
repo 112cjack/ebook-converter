@@ -34,6 +34,14 @@ INPUT_EXTENSIONS = {
 # 交互菜单提供的常用目标格式（均为 Calibre 官方支持的输出格式）
 OUTPUT_FORMATS = ["epub", "mobi", "azw3", "pdf", "txt", "docx", "rtf", "fb2", "odt", "htmlz"]
 
+# 阅读设备优化预设（Web 界面使用，CLI 不使用）。
+# 值为 Calibre 官方 output-profile，参数知识属于引擎层，界面只展示预设名
+CONVERSION_PRESETS = {
+    "default": [],  # 自动：交给 Calibre 判断
+    "kindle": ["--output-profile", "kindle"],
+    "eink": ["--output-profile", "generic_eink"],
+}
+
 CALIBRE_EXE = "ebook-convert.exe" if sys.platform == "win32" else "ebook-convert"
 CALIBRE_FALLBACK_PATHS = [
     Path("C:/Program Files/Calibre2") / CALIBRE_EXE,
@@ -90,9 +98,12 @@ def scan_folder(folder):
     return results
 
 
-def build_command(engine, src, dst):
-    """构造 ebook-convert 命令行。"""
-    return [str(engine), str(src), str(dst)]
+def build_command(engine, src, dst, options=None):
+    """构造 ebook-convert 命令行；options 为附加参数列表（如转换预设）。"""
+    cmd = [str(engine), str(src), str(dst)]
+    if options:
+        cmd.extend(str(option) for option in options)
+    return cmd
 
 
 def pdf_has_text_layer(pdf_path, pages_to_check=PDF_TEXT_CHECK_PAGES):
@@ -145,7 +156,7 @@ def _drain(stream, chunks, on_progress):
         pass  # 管道随子进程关闭产生的读写异常不影响结果判定
 
 
-def convert_file(engine, src, dst, on_progress=None, cancel_check=None):
+def convert_file(engine, src, dst, on_progress=None, cancel_check=None, options=None):
     """转换单个文件，返回 (status, message)。
 
     status 取值：ok / failed / skipped。任何情况下都不改动源文件；
@@ -153,6 +164,7 @@ def convert_file(engine, src, dst, on_progress=None, cancel_check=None):
     on_progress(pct) 可选：转换过程中收到引擎 stdout 解析出的百分比（0~100）。
     cancel_check() 可选（仅流式路径生效）：每至多 1 秒被询问一次，返回 True
     时终止子进程、清理残缺输出并返回 (STATUS_FAILED, "已取消")。
+    options 可选：附加给 ebook-convert 的参数列表（如 CONVERSION_PRESETS）。
     """
     src, dst = Path(src), Path(dst)
     if dst.exists():
@@ -163,7 +175,7 @@ def convert_file(engine, src, dst, on_progress=None, cancel_check=None):
     stderr = ""
     try:
         proc = subprocess.Popen(
-            build_command(engine, src, dst),
+            build_command(engine, src, dst, options),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,

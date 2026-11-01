@@ -425,6 +425,36 @@ class TestConvertFileProgress:
         assert seen == [100]
 
 
+class TestConversionPresets:
+    """转换预设（V1.3）：参数知识在引擎层，convert_file 透传 options。"""
+
+    def test_preset_table(self):
+        assert set(ec.CONVERSION_PRESETS) == {"default", "kindle", "eink"}
+        assert ec.CONVERSION_PRESETS["default"] == []
+
+    def test_build_command_appends_options(self):
+        cmd = ec.build_command("e", "s", "d", ["--output-profile", "kindle"])
+        assert cmd == ["e", "s", "d", "--output-profile", "kindle"]
+        assert ec.build_command("e", "s", "d") == ["e", "s", "d"]
+
+    def test_convert_file_passes_options(self, tmp_path, monkeypatch):
+        src = tmp_path / "a.txt"
+        src.write_text("x")
+        dst = tmp_path / "a.epub"
+        captured = {}
+
+        def capturing_popen(cmd, **kwargs):
+            captured["cmd"] = cmd
+            return FakeStreamPopen(output_file=dst)
+
+        monkeypatch.setattr(ec.subprocess, "Popen", capturing_popen)
+        status, _ = ec.convert_file("dummy-engine", src, dst,
+                                    on_progress=lambda p: None,
+                                    options=ec.CONVERSION_PRESETS["kindle"])
+        assert status == ec.STATUS_OK
+        assert captured["cmd"][-2:] == ["--output-profile", "kindle"]
+
+
 class TestConvertFileCancel:
     """cancel_check 取消路径（V1.1 C2）：轮询取消请求，杀进程并清理残缺输出。"""
 
