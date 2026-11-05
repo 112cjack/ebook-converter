@@ -38,25 +38,19 @@ def make_engine_resolver(settings_data, base):
 
 
 def make_auto_convert_handler(manager, settings_data, base):
-    """监听自动转换回调：把违规文件复制进上传链路并按规则期望格式创建任务。
-
-    引擎未就绪或文件不可读时返回 0（watcher 记不住指纹，下轮可再试）。
-    """
+    """监听自动转换：按源绝对路径建任务，不整文件读入/复制进 uploads。"""
     def convert(paths, fmt):
         if manager.resolve_engine() is None:
             return 0
-        ids = []
-        for path in paths:
-            try:
-                content = Path(path).read_bytes()
-            except OSError:
-                continue
-            record = manager.store_upload(Path(path).name, content)
-            ids.append(record["id"])
-        if not ids:
-            return 0
+        roots = [
+            r.get("folder") for r in (settings_data.get("watch_rules") or [])
+            if r.get("folder")
+        ]
         out_dir = str(settings_data.get("output_dir") or "").strip() or str(Path(base) / "converted")
-        created = manager.create_tasks(ids, fmt, Path(out_dir))
+        try:
+            created = manager.create_path_tasks(paths, fmt, Path(out_dir), allowed_roots=roots)
+        except ec.EngineNotFoundError:
+            return 0
         return len(created)
     return convert
 

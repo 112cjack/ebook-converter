@@ -952,7 +952,44 @@ class TestAutoConvert:
         app_env.extensions["task_manager"].wait_idle()
         tasks = client.get("/api/tasks").get_json()["tasks"]
         assert tasks and tasks[0]["format_out"] == "epub"
-        assert mobi.exists()  # 源文件不动（转换的是复制链路）
+        assert mobi.exists()  # 按源路径转换，源文件不动
+
+    def test_auto_convert_uses_source_path_without_upload_copy(self, client, app_env, tmp_path):
+        set_fake_engine(app_env)
+        watcher = self._setup(app_env, tmp_path)
+        mobi = tmp_path / "书库" / "big.mobi"
+        mobi.write_bytes(b"x" * 100)
+        os_utime_past(mobi)
+        before = list((app_env.extensions["task_manager"].upload_dir).glob("*"))
+        state = watcher.scan_once()
+        assert state["auto_converted"] == ["big.mobi"]
+        app_env.extensions["task_manager"].wait_idle()
+        after = list((app_env.extensions["task_manager"].upload_dir).glob("*"))
+        assert after == before  # 未向 uploads 复制整文件
+        tasks = client.get("/api/tasks").get_json()["tasks"]
+        assert tasks[0]["upload_id"] is None
+        mgr_task = app_env.extensions["task_manager"].tasks[tasks[0]["id"]]
+        assert Path(mgr_task["src_path"]).resolve() == mobi.resolve()
+        assert mobi.exists()
+
+    def test_create_path_tasks_rejects_outside_roots(self, app_env, tmp_path):
+        set_fake_engine(app_env)
+        mgr = app_env.extensions["task_manager"]
+        outside = tmp_path / "别处" / "a.mobi"
+        outside.parent.mkdir()
+        outside.write_bytes(b"x")
+        folder = tmp_path / "书库"
+        folder.mkdir()
+        created = mgr.create_path_tasks(
+            [outside], "epub", tmp_path / "out", allowed_roots=[folder],
+        )
+        assert len(created) == 1
+        assert created[0]["status"] == "failed"
+        assert "监听目录" in (created[0]["error"] or "")
+        assert created[0]["id"] not in []  # 已登记
+        # 不入队：wait_idle 立即返回且无输出
+        mgr.wait_idle()
+        assert not (tmp_path / "out" / "a.epub").exists()
 
     def test_engine_missing_skips_auto_convert(self, app_env, tmp_path):
         # 未 set_fake_engine：fixture 已把 find_engine 置 None

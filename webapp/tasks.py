@@ -3,6 +3,7 @@
 
 每个上传文件对应一个上传记录；每次提交转换为其创建一个任务，
 任务在内存字典中保存（即本次运行期间的转换历史，程序重启后清空）。
+监听自动转换按源文件路径直接建任务（upload_id 为 None），不复制进上传目录。
 单 worker 线程从 FIFO 队列逐个取任务，以子进程调用引擎层
 ebook_converter.convert_file，本模块只做调度、重名判定与状态管理。
 """
@@ -60,6 +61,21 @@ def safe_filename(name):
     return cleaned, False
 
 
+def path_under_roots(path, roots):
+    """判断 path 是否落在任一 root 目录之下（含 root 自身文件）。"""
+    try:
+        resolved = Path(path).resolve()
+    except OSError:
+        return False
+    for root in roots:
+        try:
+            resolved.relative_to(Path(root).resolve())
+            return True
+        except (ValueError, OSError):
+            continue
+    return False
+
+
 class TaskManager:
     """上传记录、转换任务与串行 worker 的唯一持有者。"""
 
@@ -111,7 +127,7 @@ class TaskManager:
         busy = {
             t["upload_id"]
             for t in self.tasks.values()
-            if t["status"] == CONVERTING
+            if t["status"] == CONVERTING and t.get("upload_id")
         }
         with self._lock:
             return [
@@ -199,6 +215,66 @@ class TaskManager:
             log.info("创建 %d 个转换任务（目标 %s -> %s，覆盖=%s）",
                      len(created), "多文件" if len(created) > 1 else created[0]["name"],
                      target_format, overwrite)
+        return created
+
+    def create_path_tasks(self, paths, target_format, output_dir, allowed_roots,
+                          overwrite=False, preset="default"):
+        """为监听目录里的源文件按绝对路径创建转换任务（不复制进上传目录）。
+
+        allowed_roots 之外的路径只建 failed 任务并说明原因，不入队、不调用转换；
+        源格式与目标格式相同的文件直接建 skipped 任务；返回创建的任务列表。
+        """
+        if target_format not in ec.OUTPUT_FORMATS:
+            raise ValueError(f"不支持的输出格式: {target_format}")
+        if preset not in ec.CONVERSION_PRESETS:
+            raise ValueError(f"未知的转换预设: {preset}")
+        engine = self.resolve_engine()
+        if engine is None:
+            raise ec.EngineNotFoundError("未检测到 Calibre，请先安装或在设置中指定路径")
+
+        out_dir = Path(output_dir)
+        created = []
+        with self._lock:
+            for raw in paths:
+                src = Path(raw)
+                now = time.time()
+                name = src.name
+                fmt_in = src.suffix.lower().lstrip(".")
+                task = {
+                    "id": uuid.uuid4().hex[:12],
+                    "upload_id": None,
+                    "name": name,
+                    "src_path": str(src.resolve()) if src.exists() else str(src),
+                    "format_in": fmt_in,
+                    "format_out": target_format,
+                    "status": QUEUED,
+                    "progress": 0,
+                    "message": None,
+                    "error": None,
+                    "error_detail": None,
+                    "output_path": str(out_dir / (src.stem + "." + target_format)),
+                    "output_dir": str(out_dir),
+                    "overwrite": overwrite,
+                    "preset": preset,
+                    "created_at": now,
+                    "started_at": None,
+                    "finished_at": None,
+                }
+                if not path_under_roots(src, allowed_roots):
+                    task["status"] = FAILED
+                    task["error"] = "源文件不在监听目录内"
+                    task["finished_at"] = now
+                elif fmt_in == target_format:
+                    task["status"] = SKIPPED
+                    task["message"] = f"源文件已是 {target_format} 格式，无需转换"
+                    task["finished_at"] = now
+                self.tasks[task["id"]] = task
+                self.task_order.append(task["id"])
+                created.append(task)
+                if task["status"] == QUEUED:
+                    self._queue.put(task["id"])
+        if created:
+            log.info("按路径创建 %d 个转换任务（目标 %s）", len(created), target_format)
         return created
 
     def request_cancel(self, task_id):
