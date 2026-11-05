@@ -149,11 +149,14 @@ def upload():
         if ext not in ec.INPUT_EXTENSIONS:
             rejected.append({"name": name, "reason": "不支持的文件格式"})
             continue
-        data = item.read()
-        if not data:
-            rejected.append({"name": name, "reason": "文件内容为空"})
+        try:
+            record = _manager().store_upload(name, stream=item.stream)
+        except ValueError as exc:
+            rejected.append({"name": name, "reason": str(exc)})
             continue
-        record = _manager().store_upload(name, data)
+        except OSError:
+            rejected.append({"name": name, "reason": "上传中断或写入失败"})
+            continue
         accepted.append(public_upload(record))
     return jsonify({"uploads": accepted, "rejected": rejected}), 201
 

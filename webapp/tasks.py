@@ -98,19 +98,42 @@ class TaskManager:
 
     # ── 上传 ──
 
-    def store_upload(self, filename, data):
-        """保存上传文件到工作目录，返回上传记录。调用方已做扩展名白名单校验。"""
+    def store_upload(self, filename, data=None, stream=None):
+        """保存上传文件。data=bytes 或 stream=可读对象（二选一）。"""
+        if (data is None) == (stream is None):
+            raise ValueError("store_upload 需要且仅需要 data 或 stream 之一")
         ext = Path(filename).suffix.lower()
         self.upload_dir.mkdir(parents=True, exist_ok=True)
         safe_name, truncated = safe_filename(filename)
         stored = uuid.uuid4().hex[:8] + "_" + safe_name
         stored_path = self.upload_dir / stored
-        stored_path.write_bytes(data)
+        partial = self.upload_dir / (stored + ".partial")
+        size = 0
+        try:
+            with open(partial, "wb") as fh:
+                if data is not None:
+                    fh.write(data)
+                    size = len(data)
+                else:
+                    while True:
+                        chunk = stream.read(1024 * 64)
+                        if not chunk:
+                            break
+                        fh.write(chunk)
+                        size += len(chunk)
+            if size == 0:
+                partial.unlink(missing_ok=True)
+                raise ValueError("文件内容为空")
+            partial.replace(stored_path)
+        except Exception:
+            partial.unlink(missing_ok=True)
+            stored_path.unlink(missing_ok=True)
+            raise
         record = {
             "id": uuid.uuid4().hex[:12],
             "name": safe_name,
             "stored_name": stored,
-            "size": len(data),
+            "size": size,
             "format": ext.lstrip("."),
             "removed": False,
             "truncated": truncated,

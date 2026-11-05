@@ -128,6 +128,53 @@ class TestUpload:
         assert "/" not in body["uploads"][0]["name"]
 
 
+# ── 上传流式落盘 ──
+
+
+class TestStreamingUpload:
+    def test_upload_writes_file_without_read_all(self, client, app_env, monkeypatch, tmp_path):
+        """断言 store_upload 走 stream 分支且内容完整。"""
+        calls = {"stream": 0, "data": 0}
+        orig = app_env.extensions["task_manager"].store_upload
+
+        def wrapped(filename, data=None, stream=None):
+            if stream is not None:
+                calls["stream"] += 1
+            if data is not None:
+                calls["data"] += 1
+            return orig(filename, data=data, stream=stream)
+
+        monkeypatch.setattr(app_env.extensions["task_manager"], "store_upload", wrapped)
+        data = b"ebook-bytes-" * 100
+        resp = client.post(
+            "/api/upload",
+            data={"files": (io.BytesIO(data), "a.epub")},
+            content_type="multipart/form-data",
+        )
+        assert resp.status_code == 201
+        assert calls["stream"] == 1
+        assert calls["data"] == 0
+        body = resp.get_json()["uploads"][0]
+        stored = app_env.extensions["task_manager"].upload_dir / app_env.extensions["task_manager"].uploads[body["id"]]["stored_name"]
+        assert stored.read_bytes() == data
+
+    def test_store_upload_stream_cleans_partial_on_error(self, app_env, tmp_path):
+        class Boom:
+            def read(self, n=-1):
+                raise OSError("断流")
+
+        mgr = app_env.extensions["task_manager"]
+        before = set(mgr.upload_dir.glob("*"))
+        try:
+            mgr.store_upload("x.epub", stream=Boom())
+            assert False, "应抛出"
+        except OSError:
+            pass
+        after = set(mgr.upload_dir.glob("*"))
+        assert after == before
+        assert not list(mgr.upload_dir.glob("*.partial"))
+
+
 # ── 转换提交 ──
 
 
