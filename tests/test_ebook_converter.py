@@ -549,3 +549,41 @@ class TestRealConversion:
         results = ec.run_conversion(tmp_path, "mobi", tmp_path / "out",
                                     engine=ec.find_engine())
         assert "扫描版 PDF" in results[0][2]
+
+
+class TestResolveEngine:
+    def test_portable_direct_wins_over_path(self, monkeypatch, tmp_path):
+        portable = tmp_path / "engines" / "calibre"
+        portable.mkdir(parents=True)
+        exe = portable / ec.CALIBRE_EXE
+        exe.write_text("")
+        monkeypatch.setattr(ec.shutil, "which", lambda name: str(tmp_path / "other" / "ebook-convert"))
+        assert ec.resolve_engine(base_dir=tmp_path) == exe
+
+    def test_portable_one_level_child(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(ec.shutil, "which", lambda name: None)
+        monkeypatch.setattr(ec, "CALIBRE_FALLBACK_PATHS", [])
+        child = tmp_path / "engines" / "calibre" / "Calibre Portable"
+        child.mkdir(parents=True)
+        exe = child / ec.CALIBRE_EXE
+        exe.write_text("")
+        assert ec.resolve_engine(base_dir=tmp_path) == exe
+
+    def test_manual_wins_when_no_portable(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(ec.shutil, "which", lambda name: None)
+        monkeypatch.setattr(ec, "CALIBRE_FALLBACK_PATHS", [])
+        manual = tmp_path / "manual" / ec.CALIBRE_EXE
+        manual.parent.mkdir()
+        manual.write_text("")
+        assert ec.resolve_engine(base_dir=tmp_path, manual_path=str(manual)) == manual
+
+    def test_falls_back_to_find_engine_logic(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(ec.shutil, "which", lambda name: None)
+        fake = tmp_path / "ebook-convert.exe"
+        fake.write_text("")
+        monkeypatch.setattr(ec, "CALIBRE_FALLBACK_PATHS", [fake])
+        assert ec.resolve_engine(base_dir=tmp_path / "empty") == fake
+
+    def test_find_engine_still_delegates(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(ec.shutil, "which", lambda name: str(tmp_path / "ebook-convert"))
+        assert ec.find_engine() == tmp_path / "ebook-convert"

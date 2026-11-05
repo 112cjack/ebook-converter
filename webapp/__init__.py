@@ -23,32 +23,17 @@ log = logging.getLogger("ebook-converter")
 
 
 def find_portable_engine(base):
-    """程序目录下的便携版引擎：engines/calibre 及其一级子目录（兼容官方解压结构）。"""
-    root = Path(base) / "engines" / "calibre"
-    if not root.is_dir():
-        return None
-    direct = root / ec.CALIBRE_EXE
-    if direct.is_file():
-        return direct
-    for child in sorted(root.iterdir()):
-        candidate = child / ec.CALIBRE_EXE
-        if child.is_dir() and candidate.is_file():
-            return candidate
-    return None
+    """兼容旧导入；实现已下沉到 ebook_converter。"""
+    return ec.find_portable_engine(base)
 
 
 def make_engine_resolver(settings_data, base):
-    """引擎解析优先级：程序目录便携版 > 设置中手动指定 > 自动探测（技术方案补记）。"""
+    """引擎解析：委托 ebook_converter.resolve_engine（顺序与 CLI 一致）。"""
     def resolve():
-        portable = find_portable_engine(base)
-        if portable is not None:
-            return portable
-        manual = str(settings_data.get("engine_path") or "").strip()
-        if manual:
-            path = Path(manual)
-            if path.is_file():
-                return path
-        return ec.find_engine()
+        return ec.resolve_engine(
+            base_dir=base,
+            manual_path=settings_data.get("engine_path"),
+        )
     return resolve
 
 

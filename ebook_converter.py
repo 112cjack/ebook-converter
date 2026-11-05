@@ -70,6 +70,35 @@ class EngineNotFoundError(Exception):
     """找不到 Calibre 转换引擎（ebook-convert）。"""
 
 
+def find_portable_engine(base):
+    """程序目录下的便携版引擎：engines/calibre 及其一级子目录（兼容官方解压结构）。"""
+    root = Path(base) / "engines" / "calibre"
+    if not root.is_dir():
+        return None
+    direct = root / CALIBRE_EXE
+    if direct.is_file():
+        return direct
+    for child in sorted(root.iterdir()):
+        candidate = child / CALIBRE_EXE
+        if child.is_dir() and candidate.is_file():
+            return candidate
+    return None
+
+
+def resolve_engine(base_dir=None, manual_path=None):
+    """统一引擎探测：便携版 → 手动路径 → PATH / 常见安装位置。"""
+    if base_dir is not None:
+        portable = find_portable_engine(base_dir)
+        if portable is not None:
+            return portable
+    manual = str(manual_path or "").strip()
+    if manual:
+        path = Path(manual)
+        if path.is_file():
+            return path
+    return find_engine()
+
+
 def find_engine():
     """定位 ebook-convert：先查 PATH，再查 Calibre 常见安装位置。返回 Path 或 None。"""
     found = shutil.which("ebook-convert")
@@ -252,7 +281,7 @@ def run_conversion(src_folder, target_format, out_folder, engine=None,
     每转完一个文件调用一次，用于实时输出进度。
     """
     if engine is None:
-        engine = find_engine()
+        engine = resolve_engine(base_dir=Path(__file__).resolve().parent)
         if engine is None:
             raise EngineNotFoundError("未找到 ebook-convert，请先安装 Calibre")
 
@@ -320,7 +349,7 @@ def main(argv=None):
     args = build_parser().parse_args(argv)
     print("=== 电子书格式转换器 ===")
 
-    engine = find_engine()
+    engine = resolve_engine(base_dir=Path(__file__).resolve().parent)
     if engine is None:
         print("未找到 Calibre 转换引擎（ebook-convert）。")
         print("请先安装：winget install calibre.calibre，或到 https://calibre-ebook.com/download 下载。")
