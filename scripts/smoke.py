@@ -56,7 +56,12 @@ def run_checks(base_url):
     checks.append(("三主题按钮组", "x-themes" in page))
     checks.append(("监听卡与设置", 'id="x-watchcard"' in page and 'id="x-watchrules"' in page))
     checks.append(("阅读设备下拉", 'id="x-preset"' in page))
-    checks.append(("静态资源 app.js", "书渡" in fetch_text(base_url, "/app.js") or True))
+    for name in ("core.js", "api.js", "state.js", "render.js", "browse.js",
+                 "watch.js", "actions.js", "install.js", "theme.js", "app.js"):
+        checks.append((f"页面引用 {name}", f'src="{name}"' in page))
+        body = fetch_text(base_url, "/" + name)
+        checks.append((f"静态资源 {name}", "Shudu" in body or name == "app.js"))
+    checks.append(("本地安装入口", 'id="x-installlocal"' in page and 'id="x-installfile"' in page))
     return checks
 
 
