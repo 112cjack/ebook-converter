@@ -23,3 +23,6 @@ desktop.ini
 .pytest_cache/
 .zcode/
 .worktrees/
+
+# SDD 过程台账（审查包/进度，不入库）
+.superpowers/
