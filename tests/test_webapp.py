@@ -1220,6 +1220,15 @@ class TestStatusAndPages:
         assert resp.content_type.startswith("text/html")
         assert b"<title>" in resp.data
 
+    def test_index_has_local_install_controls(self, client):
+        """引导对话框保留官网入口，并含本地上传按钮与隐藏的 .exe 选择框。"""
+        html = client.get("/").data.decode("utf-8")
+        assert 'id="x-installlocal"' in html
+        assert "选择已下载的安装包" in html
+        assert 'id="x-installfile"' in html
+        assert 'accept=".exe' in html
+        assert "calibre-ebook.com/download" in html
+
     def test_unknown_api_returns_json_404(self, client):
         resp = client.get("/api/unknown")
         assert resp.status_code == 404
