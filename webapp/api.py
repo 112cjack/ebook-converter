@@ -317,14 +317,33 @@ def cancel_task():
 
 @bp.post("/api/install-engine")
 def install_engine():
-    """后台安装转换引擎：便携版下载解压到程序目录（默认）或 winget 安装标准版。"""
-    body = request.get_json(silent=True) or {}
-    mode = str(body.get("mode") or "portable")
-    if mode not in ("portable", "winget"):
-        return jsonify({"error": "未知的安装方式"}), 400
-    if mode == "winget" and shutil.which("winget") is None:
-        return jsonify({"error": "本机没有 winget，请下载便携版引擎或到官网手动安装"}), 400
-    started = installer.EngineInstaller(current_app.extensions["base_dir"]).start(mode)
+    """后台安装转换引擎：便携版下载解压（默认）、winget 标准版，或本地上传安装包。
+
+    本地上传只接受 multipart（mode=local + package 文件），落盘到程序 tmp 目录；
+    不接受客户端传来的任意磁盘路径。
+    """
+    base = current_app.extensions["base_dir"]
+    if request.content_type and "multipart/form-data" in request.content_type:
+        mode = str(request.form.get("mode") or "local")
+        if mode != "local":
+            return jsonify({"error": "multipart 仅支持 mode=local"}), 400
+        f = request.files.get("package")
+        if f is None or not f.filename:
+            return jsonify({"error": "请选择已下载的 Calibre 便携安装包"}), 400
+        if not str(f.filename).lower().endswith(".exe"):
+            return jsonify({"error": "安装包须为 .exe 文件"}), 400
+        dest = Path(base) / "tmp" / "calibre-local-installer.exe"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        f.save(dest)
+        started = installer.EngineInstaller(base).start("local", package_path=str(dest))
+    else:
+        body = request.get_json(silent=True) or {}
+        mode = str(body.get("mode") or "portable")
+        if mode not in ("portable", "winget"):
+            return jsonify({"error": "未知的安装方式"}), 400
+        if mode == "winget" and shutil.which("winget") is None:
+            return jsonify({"error": "本机没有 winget，请下载便携版引擎或到官网手动安装"}), 400
+        started = installer.EngineInstaller(base).start(mode)
     if not started:
         return jsonify({"error": "已有安装任务在进行中"}), 409
     log.info("开始安装引擎（%s）", mode)

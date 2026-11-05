@@ -198,12 +198,14 @@
     <div class="x-guideactions">
       <button class="x-primary x-btnsm" id="x-installportable" type="button">下载便携版引擎到程序目录（推荐）</button>
       <button class="x-btn x-btnsm" id="x-installwinget" type="button">用 winget 安装标准版</button>
+      <button class="x-btn x-btnsm" id="x-installlocal" type="button">选择已下载的安装包…</button>
+      <input type="file" id="x-installfile" accept=".exe,application/x-msdownload" hidden>
     </div>
     <div class="x-installstate" id="x-installstate" hidden>
       <div class="x-pbar"><div class="x-pfill" id="x-installfill" style="width:0%"></div></div>
       <span class="x-reason" id="x-installmsg"></span>
     </div>
-    <p class="x-hint">便携版不写系统目录，引擎随本程序文件夹存放；也可到官网下载：<a href="https://calibre-ebook.com/download" target="_blank" rel="noopener noreferrer">calibre-ebook.com/download</a></p>
+    <p class="x-hint">便携版不写系统目录，引擎随本程序文件夹存放；网络不畅时可从官网下载便携版安装包后在此选择：<a href="https://calibre-ebook.com/download" target="_blank" rel="noopener noreferrer">calibre-ebook.com/download</a></p>
     <p class="x-hint">安装完成后点「重新检测」；若装在非默认位置，请在「设置」中手动指定 ebook-convert 路径。</p>
   </div>
   <div class="x-dlgfoot">

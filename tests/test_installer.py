@@ -4,6 +4,8 @@
 import subprocess
 from pathlib import Path
 
+import pytest
+
 import webapp.installer as installer
 
 
@@ -78,3 +80,82 @@ def test_winget_missing_binary_checked_in_api(tmp_path):
     """winget 可用性检查在 API 层（shutil.which），installer 只负责执行。"""
     st = installer.install_state()
     assert st["state"] == "idle"
+
+
+# ── 本地安装包（mode=local）──
+
+
+def test_local_install_uses_package_without_download(tmp_path, monkeypatch):
+    calls = {}
+
+    def ban_download(*a, **k):
+        raise AssertionError("local 模式不得下载")
+
+    def fake_run(cmd, **kwargs):
+        calls["cmd"] = cmd
+        return subprocess.CompletedProcess(cmd, 0)
+
+    pkg = tmp_path / "Calibre-Portable.exe"
+    pkg.write_bytes(b"x" * (2 * 1024 * 1024))
+    monkeypatch.setattr(installer, "_download", ban_download)
+    monkeypatch.setattr(installer.subprocess, "run", fake_run)
+    inst = installer.EngineInstaller(base=tmp_path)
+    assert inst.start("local", package_path=str(pkg)) is True
+    assert inst.wait_done(timeout=5)
+    st = installer.install_state()
+    assert st["state"] == "done"
+    assert calls["cmd"][0] == str(pkg)
+    assert "engines" in str(calls["cmd"][-1])
+
+
+def test_local_bad_package_fails_no_download(tmp_path, monkeypatch):
+    monkeypatch.setattr(installer, "_download", lambda *a, **k: (_ for _ in ()).throw(AssertionError("no dl")))
+
+    def fake_run(cmd, **kwargs):
+        return subprocess.CompletedProcess(cmd, 1, stderr="bad")
+
+    monkeypatch.setattr(installer.subprocess, "run", fake_run)
+    pkg = tmp_path / "bad.exe"
+    pkg.write_bytes(b"x" * (2 * 1024 * 1024))
+    inst = installer.EngineInstaller(base=tmp_path)
+    inst.start("local", package_path=str(pkg))
+    assert inst.wait_done(timeout=5)
+    st = installer.install_state()
+    assert st["state"] == "failed"
+    assert "无效" in st["message"] or "失败" in st["message"] or "bad" in st["message"]
+
+
+def test_local_requires_package_path(tmp_path):
+    inst = installer.EngineInstaller(base=tmp_path)
+    with pytest.raises(ValueError):
+        inst.start("local")
+
+
+def test_unknown_mode_rejected(tmp_path):
+    inst = installer.EngineInstaller(base=tmp_path)
+    with pytest.raises(ValueError):
+        inst.start("carrier-pigeon")
+
+
+def test_local_too_small_package_fails_without_download(tmp_path, monkeypatch):
+    monkeypatch.setattr(installer, "_download", lambda *a, **k: (_ for _ in ()).throw(AssertionError("no dl")))
+    pkg = tmp_path / "tiny.exe"
+    pkg.write_bytes(b"x" * 1024)
+    inst = installer.EngineInstaller(base=tmp_path)
+    inst.start("local", package_path=str(pkg))
+    assert inst.wait_done(timeout=5)
+    st = installer.install_state()
+    assert st["state"] == "failed"
+    assert "无效" in st["message"]
+
+
+def test_local_non_exe_suffix_fails_without_download(tmp_path, monkeypatch):
+    monkeypatch.setattr(installer, "_download", lambda *a, **k: (_ for _ in ()).throw(AssertionError("no dl")))
+    pkg = tmp_path / "Calibre.zip"
+    pkg.write_bytes(b"x" * (2 * 1024 * 1024))
+    inst = installer.EngineInstaller(base=tmp_path)
+    inst.start("local", package_path=str(pkg))
+    assert inst.wait_done(timeout=5)
+    st = installer.install_state()
+    assert st["state"] == "failed"
+    assert "无效" in st["message"]

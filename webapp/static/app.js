@@ -1017,6 +1017,7 @@
   function setInstallButtons(disabled) {
     $("x-installportable").disabled = disabled;
     $("x-installwinget").disabled = disabled;
+    $("x-installlocal").disabled = disabled;
   }
 
   function renderInstallState(install) {
@@ -1068,6 +1069,20 @@
     });
   }
 
+  function installEngineLocal(file) {
+    var fd = new FormData();
+    fd.append("mode", "local");
+    fd.append("package", file, file.name);
+    setInstallButtons(true);
+    renderInstallState({ active: true, state: "installing", progress: 0, message: "正在上传安装包…" });
+    api("/api/install-engine", { method: "POST", body: fd }).then(function () {
+      pollInstall();
+    }).catch(function (err) {
+      setInstallButtons(false);
+      if (!err.network) toast(err.message, "warn");
+    });
+  }
+
   $("x-guidebtn").addEventListener("click", function () { $("x-guidedlg").showModal(); });
   $("x-guideclose").addEventListener("click", function () { $("x-guidedlg").close(); });
   $("x-guideok").addEventListener("click", function () { $("x-guidedlg").close(); });
@@ -1081,6 +1096,12 @@
   });
   $("x-installportable").addEventListener("click", function () { installEngine("portable"); });
   $("x-installwinget").addEventListener("click", function () { installEngine("winget"); });
+  $("x-installlocal").addEventListener("click", function () { $("x-installfile").click(); });
+  $("x-installfile").addEventListener("change", function () {
+    var f = $("x-installfile").files && $("x-installfile").files[0];
+    $("x-installfile").value = "";
+    if (f) installEngineLocal(f);
+  });
 
   // ── 主题切换（纯视觉：读写 localStorage、切换 :root 的 data-theme）──
 

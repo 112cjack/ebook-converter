@@ -685,6 +685,87 @@ class TestPortableEngine:
         assert body["engine"]["install"]["active"] is False
 
 
+# ── 本地上传安装包 ──
+
+
+class TestLocalInstallApi:
+    def test_multipart_local_starts_installer(self, client, app_env, tmp_path, monkeypatch):
+        started = {}
+
+        class FakeInst:
+            def __init__(self, base):
+                started["base"] = base
+
+            def start(self, mode, package_path=None):
+                started["mode"] = mode
+                started["package_path"] = package_path
+                return True
+
+        monkeypatch.setattr("webapp.api.installer.EngineInstaller", FakeInst)
+        pkg = (b"x" * (2 * 1024 * 1024))
+        resp = client.post(
+            "/api/install-engine",
+            data={"mode": "local", "package": (io.BytesIO(pkg), "Calibre.exe")},
+            content_type="multipart/form-data",
+        )
+        assert resp.status_code == 202
+        assert started["mode"] == "local"
+        assert started["package_path"]
+        assert Path(started["package_path"]).is_file()
+        assert Path(started["package_path"]).parent == tmp_path / "tmp"
+
+    def test_multipart_rejects_non_exe(self, client):
+        resp = client.post(
+            "/api/install-engine",
+            data={"mode": "local", "package": (io.BytesIO(b"x"), "setup.msi")},
+            content_type="multipart/form-data",
+        )
+        assert resp.status_code == 400
+        assert ".exe" in resp.get_json()["error"]
+
+    def test_multipart_rejects_missing_file(self, client):
+        resp = client.post(
+            "/api/install-engine",
+            data={"mode": "local"},
+            content_type="multipart/form-data",
+        )
+        assert resp.status_code == 400
+
+    def test_multipart_rejects_non_local_mode(self, client):
+        resp = client.post(
+            "/api/install-engine",
+            data={"mode": "portable", "package": (io.BytesIO(b"x"), "Calibre.exe")},
+            content_type="multipart/form-data",
+        )
+        assert resp.status_code == 400
+
+    def test_json_mode_still_rejects_unknown(self, client):
+        resp = client.post("/api/install-engine", json={"mode": "local"})
+        assert resp.status_code == 400
+
+    def test_multipart_small_package_marks_failed(self, client, app_env, monkeypatch):
+        """真实走 API → installer：过小的安装包判为无效，且全程不触发下载。"""
+        import webapp.installer as installer_mod
+
+        installer_mod.reset_state()
+        monkeypatch.setattr(installer_mod, "_download",
+                            lambda *a, **k: (_ for _ in ()).throw(AssertionError("no dl")))
+        try:
+            resp = client.post(
+                "/api/install-engine",
+                data={"mode": "local", "package": (io.BytesIO(b"x" * 1024), "Calibre.exe")},
+                content_type="multipart/form-data",
+            )
+            assert resp.status_code == 202
+            inst = installer_mod.EngineInstaller(app_env.extensions["base_dir"])
+            assert inst.wait_done(timeout=5)
+            st = installer_mod.install_state()
+            assert st["state"] == "failed"
+            assert "无效" in st["message"]
+        finally:
+            installer_mod.reset_state()
+
+
 # ── 桌面快捷方式 ──
 
 
