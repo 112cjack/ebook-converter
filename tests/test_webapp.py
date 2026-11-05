@@ -766,6 +766,36 @@ class TestLocalInstallApi:
             installer_mod.reset_state()
 
 
+class TestRequestGuard:
+    """本机服务也要防 DNS rebinding 与跨站表单（本地安装会执行 exe）。"""
+
+    def test_foreign_host_rejected(self, client):
+        resp = client.get("/", headers={"Host": "evil.example"})
+        assert resp.status_code == 403
+        assert "本机" in resp.get_json()["error"]
+
+    def test_host_with_userinfo_rejected(self, client):
+        resp = client.get("/", headers={"Host": "127.0.0.1:7788@evil.example"})
+        assert resp.status_code == 403
+
+    def test_cross_site_origin_rejected(self, client):
+        resp = client.post("/api/convert", json={}, headers={"Origin": "http://evil.example"})
+        assert resp.status_code == 403
+        assert "跨站" in resp.get_json()["error"]
+
+    def test_cross_site_fetch_metadata_rejected(self, client):
+        resp = client.post("/api/convert", json={}, headers={"Sec-Fetch-Site": "cross-site"})
+        assert resp.status_code == 403
+
+    def test_cross_site_referer_rejected(self, client):
+        resp = client.post("/api/convert", json={}, headers={"Referer": "http://evil.example/x"})
+        assert resp.status_code == 403
+
+    def test_same_origin_post_allowed(self, client):
+        resp = client.post("/api/convert", json={}, headers={"Origin": "http://localhost"})
+        assert resp.status_code != 403
+
+
 # ── 桌面快捷方式 ──
 
 
@@ -1114,7 +1144,8 @@ class TestAutoConvert:
         assert len(created) == 1
         assert created[0]["status"] == "failed"
         assert "监听目录" in (created[0]["error"] or "")
-        assert created[0]["id"] not in []  # 已登记
+        assert created[0]["id"] in mgr.tasks  # 已登记
+        assert mgr._queue.unfinished_tasks == 0  # 未入队
         # 不入队：wait_idle 立即返回且无输出
         mgr.wait_idle()
         assert not (tmp_path / "out" / "a.epub").exists()

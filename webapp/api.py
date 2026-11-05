@@ -15,6 +15,7 @@ import string
 import subprocess
 import sys
 import time
+import uuid
 from pathlib import Path
 
 from flask import Blueprint, current_app, jsonify, request
@@ -332,10 +333,13 @@ def install_engine():
             return jsonify({"error": "请选择已下载的 Calibre 便携安装包"}), 400
         if not str(f.filename).lower().endswith(".exe"):
             return jsonify({"error": "安装包须为 .exe 文件"}), 400
-        dest = Path(base) / "tmp" / "calibre-local-installer.exe"
+        dest = Path(base) / "tmp" / f"calibre-local-{uuid.uuid4().hex[:8]}.exe"
         dest.parent.mkdir(parents=True, exist_ok=True)
         f.save(dest)
         started = installer.EngineInstaller(base).start("local", package_path=str(dest))
+        if not started:
+            # 已有安装任务：本次上传的副本不再使用，立即清理
+            dest.unlink(missing_ok=True)
     else:
         body = request.get_json(silent=True) or {}
         mode = str(body.get("mode") or "portable")

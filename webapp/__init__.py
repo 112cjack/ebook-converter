@@ -9,6 +9,7 @@ import atexit
 import logging
 import shutil
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from flask import Flask, jsonify, request, send_from_directory
 
@@ -20,6 +21,33 @@ from .watcher import FolderWatcher
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("ebook-converter")
+
+# 服务只绑 127.0.0.1，但浏览器里的任意网页仍可向本机端口发请求：
+# Host 白名单挡 DNS rebinding，Origin/Sec-Fetch-Site 挡跨站表单（本地安装会执行 exe）。
+LOCAL_HOSTNAMES = {"127.0.0.1", "localhost", "::1"}
+SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+
+
+def hostname_of(value):
+    """从 Host/Origin/Referer 中取主机名（兼容端口、IPv6、userinfo）。"""
+    raw = str(value or "").strip()
+    if not raw:
+        return ""
+    try:
+        return (urlsplit("//" + raw).hostname or "").lower()
+    except ValueError:
+        return ""
+
+
+def is_local_host(value):
+    return hostname_of(value) in LOCAL_HOSTNAMES
+
+
+def is_same_origin(value):
+    try:
+        return hostname_of(urlsplit(value).netloc) in LOCAL_HOSTNAMES
+    except ValueError:
+        return False
 
 
 def find_portable_engine(base):
@@ -65,6 +93,25 @@ def create_app(base_dir=None, testing=False):
 
     app = Flask(__name__, static_folder="static", static_url_path="")
     app.config["TESTING"] = testing
+
+    @app.before_request
+    def guard_local_requests():
+        """拒绝非本机 Host（DNS rebinding）与跨站写请求（CSRF）。"""
+        if not is_local_host(request.host):
+            return jsonify({"error": "仅允许本机访问"}), 403
+        if request.method in SAFE_METHODS:
+            return None
+        if (request.headers.get("Sec-Fetch-Site") or "").strip().lower() == "cross-site":
+            return jsonify({"error": "拒绝跨站请求"}), 403
+        origin = request.headers.get("Origin")
+        if origin:
+            if not is_same_origin(origin):
+                return jsonify({"error": "拒绝跨站请求"}), 403
+        else:
+            referer = request.headers.get("Referer")
+            if referer and not is_same_origin(referer):
+                return jsonify({"error": "拒绝跨站请求"}), 403
+        return None
 
     settings_data = settings.load(base)
     app.config["MAX_CONTENT_LENGTH"] = settings_data["upload_limit_mb"] * 1024 * 1024

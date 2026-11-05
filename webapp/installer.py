@@ -99,6 +99,15 @@ class EngineInstaller:
         return subprocess.run([str(installer_exe), str(target)], capture_output=True,
                               text=True, timeout=3600, encoding="utf-8", errors="replace")
 
+    def _discard_local_package(self, path):
+        """清理落在程序 tmp 目录内的上传副本；用户磁盘上的原文件不动。"""
+        try:
+            p = Path(path).resolve()
+            p.relative_to((self.base / "tmp").resolve())
+            p.unlink(missing_ok=True)
+        except (ValueError, OSError):
+            pass
+
     def _run(self, mode, package_path=None):
         try:
             if mode == "winget":
@@ -115,10 +124,12 @@ class EngineInstaller:
                 if dest.suffix.lower() != ".exe" or not dest.is_file():
                     _set_state(state="failed", message="安装包无效或损坏")
                     log.warning("本地安装包无效：%s", dest)
+                    self._discard_local_package(dest)
                     return
                 if dest.stat().st_size < MIN_LOCAL_PACKAGE_BYTES:
                     _set_state(state="failed", message="安装包无效或损坏（文件过小）")
                     log.warning("本地安装包过小：%s", dest)
+                    self._discard_local_package(dest)
                     return
                 _set_state(state="extracting", progress=0, message="正在解压本地安装包到程序目录")
                 log.info("开始解压本地安装包：%s", dest)
@@ -128,13 +139,10 @@ class EngineInstaller:
                     tail = (proc.stderr or proc.stdout or "").strip()[-200:]
                     _set_state(state="failed", message=tail or "安装包无效或损坏")
                     log.warning("本地安装包解压失败: %s", tail)
+                    self._discard_local_package(dest)
                     return
                 # 上传副本落在程序 tmp 目录内才清理，用户磁盘上的原文件不动
-                try:
-                    dest.resolve().relative_to((self.base / "tmp").resolve())
-                    dest.unlink(missing_ok=True)
-                except (ValueError, OSError):
-                    pass
+                self._discard_local_package(dest)
             else:
                 # portable（与现网一致：下载后再解压）
                 dest = self.base / "tmp" / "calibre-portable-installer.exe"
@@ -157,6 +165,8 @@ class EngineInstaller:
             _set_state(state="failed",
                        message=f"安装失败：{exc}。可改用本地安装包、winget 或到官网手动下载。")
             log.warning("引擎安装失败: %s", exc)
+            if mode == "local" and package_path:
+                self._discard_local_package(package_path)
             return
         finally:
             _set_state(active=False)

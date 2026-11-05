@@ -159,3 +159,30 @@ def test_local_non_exe_suffix_fails_without_download(tmp_path, monkeypatch):
     st = installer.install_state()
     assert st["state"] == "failed"
     assert "无效" in st["message"]
+
+
+def test_local_failure_cleans_uploaded_copy(tmp_path, monkeypatch):
+    """失败时清理落在 base/tmp 的上传副本，避免残留上百 MB 安装包。"""
+    pkg = tmp_path / "tmp" / "calibre-local-deadbeef.exe"
+    pkg.parent.mkdir(parents=True)
+    pkg.write_bytes(b"x" * (2 * 1024 * 1024))
+    monkeypatch.setattr(installer.subprocess, "run",
+                        lambda cmd, **kw: subprocess.CompletedProcess(cmd, 1, stderr="bad"))
+    inst = installer.EngineInstaller(base=tmp_path)
+    inst.start("local", package_path=str(pkg))
+    assert inst.wait_done(timeout=5)
+    assert installer.install_state()["state"] == "failed"
+    assert not pkg.exists()
+
+
+def test_local_success_cleans_uploaded_copy(tmp_path, monkeypatch):
+    pkg = tmp_path / "tmp" / "calibre-local-cafebabe.exe"
+    pkg.parent.mkdir(parents=True)
+    pkg.write_bytes(b"x" * (2 * 1024 * 1024))
+    monkeypatch.setattr(installer.subprocess, "run",
+                        lambda cmd, **kw: subprocess.CompletedProcess(cmd, 0))
+    inst = installer.EngineInstaller(base=tmp_path)
+    inst.start("local", package_path=str(pkg))
+    assert inst.wait_done(timeout=5)
+    assert installer.install_state()["state"] == "done"
+    assert not pkg.exists()
