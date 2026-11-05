@@ -261,6 +261,9 @@ class TestRunConversion:
         assert progress == ["a.txt", "b.txt"]  # 每转完一个立即回调
 
     def test_raises_when_engine_missing(self, tmp_path, monkeypatch):
+        # run_conversion 会走 resolve_engine：便携版探测必须先被 stub，
+        # 否则仓库内存在 engines/calibre 时用例会 DID NOT RAISE。
+        monkeypatch.setattr(ec, "find_portable_engine", lambda base: None)
         monkeypatch.setattr(ec, "find_engine", lambda: None)
         with pytest.raises(ec.EngineNotFoundError):
             ec.run_conversion(tmp_path, "mobi", tmp_path / "out")
@@ -557,8 +560,11 @@ class TestResolveEngine:
         portable.mkdir(parents=True)
         exe = portable / ec.CALIBRE_EXE
         exe.write_text("")
+        manual = tmp_path / "manual" / ec.CALIBRE_EXE
+        manual.parent.mkdir()
+        manual.write_text("")
         monkeypatch.setattr(ec.shutil, "which", lambda name: str(tmp_path / "other" / "ebook-convert"))
-        assert ec.resolve_engine(base_dir=tmp_path) == exe
+        assert ec.resolve_engine(base_dir=tmp_path, manual_path=str(manual)) == exe
 
     def test_portable_one_level_child(self, monkeypatch, tmp_path):
         monkeypatch.setattr(ec.shutil, "which", lambda name: None)
