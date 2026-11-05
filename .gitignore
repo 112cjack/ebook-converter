@@ -22,3 +22,4 @@ Thumbs.db
 desktop.ini
 .pytest_cache/
 .zcode/
+.worktrees/
