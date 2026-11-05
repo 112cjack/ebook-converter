@@ -202,7 +202,10 @@ body{
   background: var(--x-surface); border: 1px solid var(--x-line); border-radius: 8px;
   padding: 7px 12px; min-height: 32px; cursor: pointer;
 }
-.x-btn:hover{ border-color: var(--x-muted); }
+.x-btn:hover{
+  border-color: var(--x-muted);
+  border-color: color-mix(in srgb, var(--x-muted) 55%, var(--x-ink));
+}
 .x-btn:disabled{ opacity: .45; cursor: not-allowed; }
 .x-btnsm{ min-height: 34px; padding: 6px 14px; }
 .x-linkbtn{
@@ -226,7 +229,7 @@ body{
 .x-icobtn:hover{ color: var(--x-ink); border-color: var(--x-line); background: var(--x-paper); }
 
 /* ── main ── */
-.x-main{ padding: 20px; max-width: 1020px; margin: 0 auto; width: 100%; flex: 1; }
+.x-main{ padding: 22px 20px; max-width: 1020px; margin: 0 auto; width: 100%; flex: 1; }
 .x-drop{
   border: 1.5px dashed var(--x-line); border-radius: 12px;
   background: var(--x-dropbg);
@@ -259,7 +262,8 @@ body{
 .x-empty{
   border: 1px dashed var(--x-line); border-radius: 10px;
   background: var(--x-surface);
-  padding: 18px; text-align: center; color: var(--x-muted); font-size: 13px;
+  padding: 28px 18px; text-align: center; color: var(--x-muted);
+  font-size: 14px; line-height: 1.6;
 }
 .x-row{
   display: grid;
@@ -267,7 +271,7 @@ body{
   gap: 6px 14px; align-items: center;
   background: var(--x-surface);
   border: 1px solid var(--x-line); border-radius: 10px;
-  padding: 10px 12px 10px 0; margin-bottom: 8px;
+  padding: 10px 12px 10px 0; margin-bottom: 10px;
 }
 .x-spine{ width: 8px; height: 100%; min-height: 44px; border-radius: 10px 0 0 10px; }
 .x-file{ min-width: 0; }
@@ -478,6 +482,8 @@ body{
 .x-installstate .x-pbar{ flex: 1; min-width: 120px; height: 6px; border-radius: 999px;
   background: var(--x-track); overflow: hidden; }
 .x-hint{ margin: 0; font-size: 12px; color: var(--x-muted); font-weight: 400; overflow-wrap: anywhere; }
+/* 安装引导里的说明文案：与按钮拉开距离，长段落更易读 */
+#x-guidedlg .x-hint{ line-height: 1.55; margin-top: 8px; }
 .x-cmdrow{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .x-cmd{
   font-family: var(--x-mono); font-size: 12px;
